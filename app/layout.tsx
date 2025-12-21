@@ -5,6 +5,7 @@ import "react-international-phone/style.css";
 import "quill/dist/quill.snow.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import PublicShell from "./components/PublicShell";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

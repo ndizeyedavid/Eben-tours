@@ -16,7 +16,10 @@ enum BookingStatus {
 enum PackageStatus {
   active
   draft
+<<<<<<< HEAD
   disabled
+=======
+>>>>>>> 5d17947e5c4b692bb8f07c9965626f33dc74a871
 }
 
 enum BlogStatus {
@@ -24,11 +27,25 @@ enum BlogStatus {
   published
 }
 
+<<<<<<< HEAD
+=======
+enum CustomerSegment {
+  vip
+  new
+  returning
+}
+
+>>>>>>> 5d17947e5c4b692bb8f07c9965626f33dc74a871
 enum AuditEntity {
   booking
   package
   blog
   customer
+<<<<<<< HEAD
+=======
+  revenue
+  settings
+>>>>>>> 5d17947e5c4b692bb8f07c9965626f33dc74a871
   system
 }
 
@@ -44,6 +61,7 @@ enum AuditAction {
   print
 }
 
+<<<<<<< HEAD
 model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique
@@ -87,10 +105,72 @@ model Package {
   updatedAt   DateTime      @updatedAt
 
   bookings Booking[]
+=======
+model AdminUser {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  name      String?
+  email     String?
+  role      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  audits    AuditLog[]
+}
+
+model Customer {
+  id           String          @id @default(cuid())
+  externalId   String?         @unique
+  name         String
+  email        String?         @unique
+  phone        String?
+  segment      CustomerSegment @default(new)
+  country      String?
+  notes        String?
+  lastBooking  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  bookings     Booking[]
+}
+
+model Package {
+  id           String        @id @default(cuid())
+  externalId   String?       @unique
+  title        String
+  location     String
+  durationDays Int
+  price        Int
+  minGroup     Int           @default(1)
+  maxGroup     Int
+  featured     Boolean       @default(false)
+  status       PackageStatus @default(active)
+
+  description  String?
+  destination  String?
+  coverImageUrl String?
+  galleryImages Json?
+  priceNote    String?
+
+  itinerary    Json?
+  inclusions   Json?
+  exclusions   Json?
+  info         Json?
+
+  supportPhone String?
+  supportEmail String?
+  whatsappUrl  String?
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  bookings     Booking[]
+>>>>>>> 5d17947e5c4b692bb8f07c9965626f33dc74a871
 }
 
 model Booking {
   id          String        @id @default(cuid())
+<<<<<<< HEAD
   publicId    String        @unique
   travelDate  DateTime
   travellers  Int
@@ -107,14 +187,42 @@ model Booking {
 
   @@index([status])
   @@index([travelDate])
+=======
+  externalId  String?       @unique
+  date        DateTime
+  travellers  Int
+  amount      Int
+  status      BookingStatus @default(pending)
+
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id])
+
+  packageId   String
+  package     Package       @relation(fields: [packageId], references: [id])
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([customerId])
+  @@index([packageId])
+  @@index([status])
+  @@index([date])
+>>>>>>> 5d17947e5c4b692bb8f07c9965626f33dc74a871
 }
 
 model BlogPost {
   id         String     @id @default(cuid())
+<<<<<<< HEAD
   publicId   String     @unique
   title      String
   category   String
   authorName String
+=======
+  externalId String?    @unique
+  title      String
+  category   String
+  author     String
+>>>>>>> 5d17947e5c4b692bb8f07c9965626f33dc74a871
   status     BlogStatus @default(draft)
   readTime   String
   content    Json
@@ -125,6 +233,7 @@ model BlogPost {
   @@index([category])
 }
 
+<<<<<<< HEAD
 model AuditEvent {
   id        String      @id @default(cuid())
   entity    AuditEntity
@@ -139,4 +248,22 @@ model AuditEvent {
 
   @@index([createdAt])
   @@index([entity])
+=======
+model AuditLog {
+  id        String      @id @default(cuid())
+  entity    AuditEntity
+  action    AuditAction
+  actor     String
+  summary   String
+  href      String?
+
+  adminUserId String?
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([entity])
+  @@index([action])
+  @@index([createdAt])
+>>>>>>> 5d17947e5c4b692bb8f07c9965626f33dc74a871
 }

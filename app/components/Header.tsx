@@ -47,7 +47,7 @@ export default function Header() {
         </nav>
 
         <div className={styles.cta}>
-          <Link className={styles["cta-primary"]} href="#book">
+          <Link className={styles["cta-primary"]} href="/book">
             Book a Trek
           </Link>
         </div>

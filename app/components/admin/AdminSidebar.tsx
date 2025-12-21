@@ -24,7 +24,7 @@ const navItems: Array<{
   { label: "Customers", href: "/admin/customers", icon: "customers" },
   { label: "Revenue", href: "/admin/revenue", icon: "revenue" },
   { label: "Audit", href: "/admin/audit", icon: "audit" },
-  { label: "Settings", href: "/admin/settings", icon: "settings" },
+  // { label: "Settings", href: "/admin/settings", icon: "settings" },
 ];
 
 function Icon({ name }: { name: (typeof navItems)[number]["icon"] }) {
@@ -217,7 +217,7 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      <div className="mt-8">
+      {/* <div className="mt-8">
         <button
           type="button"
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
@@ -238,7 +238,7 @@ export default function AdminSidebar() {
           </span>
           Logout
         </button>
-      </div>
+      </div> */}
     </aside>
   );
 }

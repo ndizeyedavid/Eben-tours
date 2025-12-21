@@ -38,7 +38,7 @@ export async function PATCH(
         const statusLine =
           status === "confirmed"
             ? "Your booking has been confirmed."
-            : "Your booking has been cancelled.";
+            : "Your booking has been rejected.";
 
         await sendEmail({
           to: customerEmail,

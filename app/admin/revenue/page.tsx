@@ -242,7 +242,7 @@ export default function AdminRevenuePage() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3! sm:grid-cols-3!">
         <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm">
           <div className="text-xs font-extrabold text-[var(--muted)]">
             TOTAL REVENUE
@@ -269,7 +269,7 @@ export default function AdminRevenuePage() {
         </div>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3! lg:grid-cols-2!">
         <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
@@ -357,7 +357,7 @@ export default function AdminRevenuePage() {
           Insights
         </div>
         <div className="mt-1 text-sm font-semibold text-[var(--muted)]">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2! sm:grid-cols-2!">
             <div className="rounded-2xl border border-emerald-900/10 bg-[#f6f8f7] p-4">
               <div className="text-xs font-extrabold text-[var(--muted)]">
                 TOP DRIVER

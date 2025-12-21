@@ -147,9 +147,23 @@ export default function AdminBlogsPage() {
             body: form,
           }
         );
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok)
-          throw new Error(uploadData?.error?.message || "Upload failed");
+        const uploadText = await uploadRes.text();
+        const uploadData = (() => {
+          try {
+            return JSON.parse(uploadText);
+          } catch {
+            return null;
+          }
+        })();
+
+        if (!uploadRes.ok) {
+          const msg =
+            (uploadData as any)?.error?.message ||
+            (typeof uploadText === "string" && uploadText.trim()
+              ? uploadText.trim()
+              : "Upload failed");
+          throw new Error(msg);
+        }
 
         const secureUrl = String(uploadData?.secure_url || "");
         if (!secureUrl) throw new Error("Upload failed");

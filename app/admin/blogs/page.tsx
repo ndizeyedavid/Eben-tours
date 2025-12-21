@@ -43,6 +43,9 @@ export default function AdminBlogsPage() {
   const { pushActivity, pushAudit, pushNotification } = useAdminOps();
   const [rows, setRows] = useState<BlogRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -109,9 +112,12 @@ export default function AdminBlogsPage() {
   }, []);
 
   const savePost = useCallback(async () => {
+    if (saving) return;
     if (!draftTitle.trim()) return;
 
     const time = "Just now";
+
+    setSaving(true);
 
     try {
       if (!editingId) {
@@ -142,6 +148,8 @@ export default function AdminBlogsPage() {
       setToast("Failed to save post");
       window.setTimeout(() => setToast(null), 1800);
       return;
+    } finally {
+      setSaving(false);
     }
 
     pushAudit({
@@ -179,16 +187,19 @@ export default function AdminBlogsPage() {
     pushActivity,
     pushAudit,
     pushNotification,
+    saving,
   ]);
 
   const togglePublish = useCallback(
     async (id: string) => {
+      if (togglingId) return;
       const time = "Just now";
       const post = rows.find((r) => r.id === id);
       const current = post?.status ?? "draft";
       const next = current === "published" ? "draft" : "published";
 
       try {
+        setTogglingId(id);
         await axios.patch(`/api/admin/blogs/${id}`, { status: next });
         await fetchRows();
         setToast("Status updated");
@@ -197,6 +208,8 @@ export default function AdminBlogsPage() {
         setToast("Failed to update status");
         window.setTimeout(() => setToast(null), 1800);
         return;
+      } finally {
+        setTogglingId(null);
       }
 
       pushAudit({
@@ -224,7 +237,7 @@ export default function AdminBlogsPage() {
         href: "/admin/blogs",
       });
     },
-    [fetchRows, pushActivity, pushAudit, pushNotification, rows]
+    [fetchRows, pushActivity, pushAudit, pushNotification, rows, togglingId]
   );
 
   const openDelete = useCallback((id: string) => {
@@ -239,10 +252,12 @@ export default function AdminBlogsPage() {
 
   const confirmDelete = useCallback(async () => {
     if (!confirmTargetId) return;
+    if (deletingId) return;
     const time = "Just now";
     const deleted = rows.find((r) => r.id === confirmTargetId);
 
     try {
+      setDeletingId(confirmTargetId);
       await axios.delete(`/api/admin/blogs/${confirmTargetId}`);
       await fetchRows();
       setToast("Post deleted");
@@ -252,6 +267,8 @@ export default function AdminBlogsPage() {
       setToast("Failed to delete post");
       window.setTimeout(() => setToast(null), 1800);
       return;
+    } finally {
+      setDeletingId(null);
     }
 
     pushAudit({
@@ -281,6 +298,7 @@ export default function AdminBlogsPage() {
   }, [
     closeDelete,
     confirmTargetId,
+    deletingId,
     fetchRows,
     pushActivity,
     pushAudit,
@@ -338,17 +356,23 @@ export default function AdminBlogsPage() {
             <button
               type="button"
               onClick={() => togglePublish(row.original.id)}
+              disabled={Boolean(togglingId) || Boolean(deletingId) || loading}
               className={
                 row.original.status === "published"
                   ? "rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-emerald-700 hover:bg-emerald-50"
                   : "rounded-xl bg-emerald-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
               }
             >
-              {row.original.status === "published" ? "Unpublish" : "Publish"}
+              {togglingId === row.original.id
+                ? "Updating..."
+                : row.original.status === "published"
+                ? "Unpublish"
+                : "Publish"}
             </button>
             <button
               type="button"
               onClick={() => openEdit(row.original.id)}
+              disabled={Boolean(togglingId) || Boolean(deletingId) || loading}
               className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
             >
               Edit
@@ -356,15 +380,16 @@ export default function AdminBlogsPage() {
             <button
               type="button"
               onClick={() => openDelete(row.original.id)}
+              disabled={Boolean(togglingId) || Boolean(deletingId) || loading}
               className="rounded-xl border border-red-900/10 bg-white px-3 py-2 text-xs font-extrabold text-red-700 hover:bg-red-50"
             >
-              Delete
+              {deletingId === row.original.id ? "Deleting..." : "Delete"}
             </button>
           </div>
         ),
       },
     ],
-    [openDelete, openEdit, togglePublish]
+    [deletingId, loading, openDelete, openEdit, togglePublish, togglingId]
   );
 
   return (
@@ -464,6 +489,7 @@ export default function AdminBlogsPage() {
             <button
               type="button"
               onClick={closeDrawer}
+              disabled={saving}
               className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
             >
               Cancel
@@ -471,9 +497,10 @@ export default function AdminBlogsPage() {
             <button
               type="button"
               onClick={savePost}
+              disabled={saving}
               className="rounded-xl bg-[var(--color-secondary)] px-4 py-2 text-xs font-extrabold text-white hover:opacity-90"
             >
-              {editing ? "Save changes" : "Save draft"}
+              {saving ? "Saving..." : editing ? "Save changes" : "Save draft"}
             </button>
           </div>
 
@@ -498,6 +525,9 @@ export default function AdminBlogsPage() {
           <button
             type="button"
             onClick={openCreate}
+            disabled={
+              loading || saving || Boolean(togglingId) || Boolean(deletingId)
+            }
             className="rounded-xl bg-[var(--color-secondary)] px-4 py-2 text-xs font-extrabold text-white hover:opacity-90"
           >
             New post
@@ -537,6 +567,7 @@ export default function AdminBlogsPage() {
             columns={columns}
             searchPlaceholder="Search posts by title or category..."
             pageSize={8}
+            loading={loading}
             getRowId={(row) => (row as BlogRow).id}
             renderToolbar={(table) => {
               const statusCol = table.getColumn("status");

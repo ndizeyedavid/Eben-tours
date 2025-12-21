@@ -21,6 +21,7 @@ export default function AdminDataTable<TData>({
   searchPlaceholder = "Search...",
   pageSize = 8,
   renderToolbar,
+  loading = false,
   enableRowSelection = false,
   getRowId,
 }: {
@@ -29,6 +30,7 @@ export default function AdminDataTable<TData>({
   searchPlaceholder?: string;
   pageSize?: number;
   renderToolbar?: (table: Table<TData>) => ReactNode;
+  loading?: boolean;
   enableRowSelection?: boolean;
   getRowId?: (originalRow: TData, index: number, parent?: any) => string;
 }) {
@@ -146,7 +148,7 @@ export default function AdminDataTable<TData>({
             <button
               type="button"
               onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              disabled={loading || !table.getCanPreviousPage()}
               className="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Prev
@@ -154,7 +156,7 @@ export default function AdminDataTable<TData>({
             <button
               type="button"
               onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              disabled={loading || !table.getCanNextPage()}
               className="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
@@ -218,7 +220,7 @@ export default function AdminDataTable<TData>({
                     colSpan={table.getAllColumns().length}
                     className="px-4 py-10 text-center text-sm font-semibold text-[var(--muted)]"
                   >
-                    No results.
+                    {loading ? "Loading..." : "No results."}
                   </td>
                 </tr>
               ) : (

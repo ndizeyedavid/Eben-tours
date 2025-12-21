@@ -178,6 +178,7 @@ export default function AdminAuditPage() {
           columns={columns}
           searchPlaceholder="Search audit by summary or actor..."
           pageSize={12}
+          loading={loading}
           getRowId={(row) => (row as AuditRow).id}
           renderToolbar={() => {
             return (
@@ -185,6 +186,7 @@ export default function AdminAuditPage() {
                 <select
                   value={entity}
                   onChange={(e) => setEntity(e.target.value)}
+                  disabled={loading}
                   className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
                 >
                   <option value="all">All entities</option>
@@ -198,6 +200,7 @@ export default function AdminAuditPage() {
                 <select
                   value={action}
                   onChange={(e) => setAction(e.target.value)}
+                  disabled={loading}
                   className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
                 >
                   <option value="all">All actions</option>
@@ -216,12 +219,14 @@ export default function AdminAuditPage() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Filter (server)"
+                  disabled={loading}
                   className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
                 />
 
                 <button
                   type="button"
                   onClick={() => void fetchRows()}
+                  disabled={loading}
                   className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                 >
                   {loading ? "Loading..." : "Refresh"}

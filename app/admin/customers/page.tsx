@@ -90,6 +90,7 @@ export default function AdminCustomersPage() {
   const { pushActivity, pushAudit, pushNotification } = useAdminOps();
   const [rows, setRows] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -279,7 +280,9 @@ export default function AdminCustomersPage() {
 
   const saveNote = useCallback(async () => {
     if (!selectedId) return;
+    if (savingNote) return;
 
+    setSavingNote(true);
     try {
       await axios.patch(`/api/admin/customers/${selectedId}`, {
         note,
@@ -295,6 +298,8 @@ export default function AdminCustomersPage() {
       setToast("Failed to save note");
       window.setTimeout(() => setToast(null), 1800);
       return;
+    } finally {
+      setSavingNote(false);
     }
 
     const time = "Just now";
@@ -322,7 +327,15 @@ export default function AdminCustomersPage() {
       time,
       href: "/admin/customers",
     });
-  }, [note, pushActivity, pushAudit, pushNotification, selected, selectedId]);
+  }, [
+    note,
+    pushActivity,
+    pushAudit,
+    pushNotification,
+    savingNote,
+    selected,
+    selectedId,
+  ]);
 
   const kpis = useMemo(() => {
     const vip = rows.filter((r) => r.segment === "vip").length;
@@ -555,9 +568,10 @@ export default function AdminCustomersPage() {
                 <button
                   type="button"
                   onClick={saveNote}
+                  disabled={savingNote}
                   className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
                 >
-                  Save note
+                  {savingNote ? "Saving..." : "Save note"}
                 </button>
               </div>
             </div>
@@ -608,6 +622,7 @@ export default function AdminCustomersPage() {
             columns={columns}
             searchPlaceholder="Search customers by name or email..."
             pageSize={8}
+            loading={loading}
             enableRowSelection
             getRowId={(row) => (row as CustomerRow).id}
             renderToolbar={(table) => {
@@ -632,6 +647,7 @@ export default function AdminCustomersPage() {
                     onClick={() =>
                       exportCustomers({ format: "csv", exportRows, scope })
                     }
+                    disabled={loading}
                     className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                   >
                     Export CSV
@@ -641,6 +657,7 @@ export default function AdminCustomersPage() {
                     onClick={() =>
                       exportCustomers({ format: "xlsx", exportRows, scope })
                     }
+                    disabled={loading}
                     className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                   >
                     Export XLSX
@@ -653,6 +670,7 @@ export default function AdminCustomersPage() {
                     <select
                       value={value}
                       onChange={(e) => segCol?.setFilterValue(e.target.value)}
+                      disabled={loading}
                       className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
                     >
                       <option value="all">All</option>
@@ -668,6 +686,7 @@ export default function AdminCustomersPage() {
                       segCol?.setFilterValue("all");
                       table.setGlobalFilter("");
                     }}
+                    disabled={loading}
                     className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                   >
                     Reset

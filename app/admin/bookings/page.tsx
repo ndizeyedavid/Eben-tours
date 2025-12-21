@@ -54,6 +54,10 @@ export default function AdminBookingsPage() {
   const { pushActivity, pushAudit, pushNotification } = useAdminOps();
   const [rows, setRows] = useState<BookingRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState<null | "csv" | "xlsx">(null);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [copied, setCopied] = useState<null | "copied" | "failed">(null);
@@ -151,15 +155,20 @@ export default function AdminBookingsPage() {
   }, [selected]);
 
   const setStatus = useCallback(
-    (status: BookingStatus) => {
+    async (status: BookingStatus) => {
       if (!selected) return;
+      if (statusUpdating) return;
 
-      void axios
-        .patch(`/api/admin/bookings/${selected.id}`, { status })
-        .then(() => fetchRows())
-        .catch(() => {
-          // ignore
-        });
+      setStatusUpdating(true);
+      try {
+        await axios.patch(`/api/admin/bookings/${selected.id}`, { status });
+        await fetchRows();
+      } catch {
+        // ignore
+        return;
+      } finally {
+        setStatusUpdating(false);
+      }
 
       const time = "Just now";
       const label = status[0].toUpperCase() + status.slice(1);
@@ -191,7 +200,14 @@ export default function AdminBookingsPage() {
         href: "/admin/bookings",
       });
     },
-    [fetchRows, pushActivity, pushAudit, pushNotification, selected]
+    [
+      fetchRows,
+      pushActivity,
+      pushAudit,
+      pushNotification,
+      selected,
+      statusUpdating,
+    ]
   );
 
   const startEdit = useCallback(() => {
@@ -207,22 +223,27 @@ export default function AdminBookingsPage() {
     setDraftTravellers("");
   }, []);
 
-  const saveEdit = useCallback(() => {
+  const saveEdit = useCallback(async () => {
     if (!selected) return;
+    if (editSaving) return;
     const travellersNum = Number(draftTravellers);
     if (!draftDate) return;
     if (!Number.isFinite(travellersNum) || travellersNum <= 0) return;
 
-    void axios
-      .patch(`/api/admin/bookings/${selected.id}`, {
+    setEditSaving(true);
+    try {
+      await axios.patch(`/api/admin/bookings/${selected.id}`, {
         date: draftDate,
         travellers: travellersNum,
-      })
-      .then(() => fetchRows())
-      .catch(() => {
-        // ignore
       });
-    setIsEditing(false);
+      await fetchRows();
+      setIsEditing(false);
+    } catch {
+      // ignore
+      return;
+    } finally {
+      setEditSaving(false);
+    }
 
     const time = "Just now";
     pushAudit({
@@ -243,6 +264,7 @@ export default function AdminBookingsPage() {
   }, [
     draftDate,
     draftTravellers,
+    editSaving,
     fetchRows,
     pushActivity,
     pushAudit,
@@ -250,17 +272,21 @@ export default function AdminBookingsPage() {
   ]);
 
   const setStatusBulk = useCallback(
-    (ids: string[], status: BookingStatus) => {
+    async (ids: string[], status: BookingStatus) => {
       if (ids.length === 0) return;
+      if (bulkUpdating) return;
 
-      void axios
-        .patch("/api/admin/bookings", { bookingIds: ids, status })
-        .then(() => fetchRows())
-        .catch(() => {
-          // ignore
-        });
+      setBulkUpdating(true);
+      try {
+        await axios.patch("/api/admin/bookings", { bookingIds: ids, status });
+        await fetchRows();
+      } catch {
+        // ignore
+      } finally {
+        setBulkUpdating(false);
+      }
     },
-    [fetchRows]
+    [bulkUpdating, fetchRows]
   );
 
   const openBulkConfirm = useCallback(
@@ -290,7 +316,7 @@ export default function AdminBookingsPage() {
   }, []);
 
   const exportBookings = useCallback(
-    ({
+    async ({
       format,
       exportRows,
       scope,
@@ -299,6 +325,7 @@ export default function AdminBookingsPage() {
       exportRows: BookingRow[];
       scope: "selected" | "filtered";
     }) => {
+      if (exporting) return;
       const exportData: BookingExportRow[] = exportRows.map((r) => ({
         booking_id: r.id,
         customer: r.customer,
@@ -312,55 +339,62 @@ export default function AdminBookingsPage() {
       const stamp = new Date().toISOString().slice(0, 10);
       const base = `bookings_${scope}_${stamp}`;
 
-      if (format === "csv") {
-        const headers: (keyof BookingExportRow)[] = [
-          "booking_id",
-          "customer",
-          "package",
-          "date",
-          "travellers",
-          "amount",
-          "status",
-        ];
+      setExporting(format);
+      try {
+        if (format === "csv") {
+          const headers: (keyof BookingExportRow)[] = [
+            "booking_id",
+            "customer",
+            "package",
+            "date",
+            "travellers",
+            "amount",
+            "status",
+          ];
 
-        const esc = (v: unknown) => {
-          const s = String(v ?? "");
-          if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-          return s;
-        };
+          const esc = (v: unknown) => {
+            const s = String(v ?? "");
+            if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+            return s;
+          };
 
-        const csv = [
-          headers.join(","),
-          ...exportData.map((row) => headers.map((h) => esc(row[h])).join(",")),
-        ].join("\n");
+          const csv = [
+            headers.join(","),
+            ...exportData.map((row) =>
+              headers.map((h) => esc(row[h])).join(",")
+            ),
+          ].join("\n");
 
-        downloadBlob(
-          new Blob([csv], { type: "text/csv;charset=utf-8" }),
-          `${base}.csv`
-        );
-      } else {
-        void exportBrandedXlsx<BookingExportRow>({
-          filename: `${base}.xlsx`,
-          sheetName: "Bookings",
-          title: "Bookings Report",
-          companyName: "Eben Tours",
-          logoUrl: "/Logo-011.png",
-          meta: [
-            { label: "Generated", value: stamp },
-            { label: "Scope", value: scope },
-            { label: "Rows", value: String(exportRows.length) },
-          ],
-          columns: [
-            { header: "Booking ID", key: "booking_id", width: 16 },
-            { header: "Customer", key: "customer", width: 22 },
-            { header: "Package", key: "package", width: 28 },
-            { header: "Date", key: "date", width: 14 },
-            { header: "Travellers", key: "travellers", width: 12 },
-            { header: "Amount", key: "amount", width: 12 },
-            { header: "Status", key: "status", width: 14 },
-          ],
-          rows: exportData,
-        });
+          downloadBlob(
+            new Blob([csv], { type: "text/csv;charset=utf-8" }),
+            `${base}.csv`
+          );
+        } else {
+          await exportBrandedXlsx<BookingExportRow>({
+            filename: `${base}.xlsx`,
+            sheetName: "Bookings",
+            title: "Bookings Report",
+            companyName: "Eben Tours",
+            logoUrl: "/Logo-011.png",
+            meta: [
+              { label: "Generated", value: stamp },
+              { label: "Scope", value: scope },
+              { label: "Rows", value: String(exportRows.length) },
+            ],
+            columns: [
+              { header: "Booking ID", key: "booking_id", width: 16 },
+              { header: "Customer", key: "customer", width: 22 },
+              { header: "Package", key: "package", width: 28 },
+              { header: "Date", key: "date", width: 14 },
+              { header: "Travellers", key: "travellers", width: 12 },
+              { header: "Amount", key: "amount", width: 12 },
+              { header: "Status", key: "status", width: 14 },
+            ],
+            rows: exportData,
+          });
+        }
+      } finally {
+        setExporting(null);
       }
 
       const time = "Just now";
@@ -388,7 +422,7 @@ export default function AdminBookingsPage() {
         href: "/admin/bookings",
       });
     },
-    [downloadBlob, pushActivity, pushAudit, pushNotification]
+    [downloadBlob, exporting, pushActivity, pushAudit, pushNotification]
   );
 
   const columns: ColumnDef<BookingRow>[] = useMemo(
@@ -486,16 +520,21 @@ export default function AdminBookingsPage() {
           </span>
         }
         confirmLabel={
-          confirmAction === "cancel" ? "Yes, cancel" : "Yes, confirm"
+          bulkUpdating
+            ? "Updating..."
+            : confirmAction === "cancel"
+            ? "Yes, cancel"
+            : "Yes, confirm"
         }
         variant={confirmAction === "cancel" ? "danger" : "default"}
         onClose={closeBulkConfirm}
         onConfirm={() => {
           if (!confirmAction) return;
+          if (bulkUpdating) return;
 
           const newStatus =
             confirmAction === "cancel" ? "cancelled" : "confirmed";
-          setStatusBulk(confirmIds, newStatus);
+          void setStatusBulk(confirmIds, newStatus);
 
           const time = "Just now";
           const label = newStatus[0].toUpperCase() + newStatus.slice(1);
@@ -565,6 +604,7 @@ export default function AdminBookingsPage() {
                     <button
                       type="button"
                       onClick={startEdit}
+                      disabled={statusUpdating || editSaving}
                       className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                     >
                       Edit
@@ -574,6 +614,7 @@ export default function AdminBookingsPage() {
                       <button
                         type="button"
                         onClick={cancelEdit}
+                        disabled={editSaving}
                         className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                       >
                         Cancel
@@ -581,9 +622,10 @@ export default function AdminBookingsPage() {
                       <button
                         type="button"
                         onClick={saveEdit}
+                        disabled={editSaving}
                         className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
                       >
-                        Save
+                        {editSaving ? "Saving..." : "Save"}
                       </button>
                     </div>
                   )}
@@ -772,23 +814,26 @@ export default function AdminBookingsPage() {
                 <button
                   type="button"
                   onClick={() => setStatus("pending")}
+                  disabled={statusUpdating || editSaving}
                   className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                 >
-                  Mark Pending
+                  {statusUpdating ? "Updating..." : "Mark Pending"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setStatus("confirmed")}
+                  disabled={statusUpdating || editSaving}
                   className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
                 >
-                  Confirm
+                  {statusUpdating ? "Updating..." : "Confirm"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setStatus("cancelled")}
+                  disabled={statusUpdating || editSaving}
                   className="rounded-xl bg-red-600 px-4 py-2 text-xs font-extrabold text-white hover:bg-red-700"
                 >
-                  Cancel
+                  {statusUpdating ? "Updating..." : "Cancel"}
                 </button>
               </div>
               <div className="mt-3 text-xs font-semibold text-[var(--muted)]">
@@ -816,6 +861,7 @@ export default function AdminBookingsPage() {
             columns={columns}
             searchPlaceholder="Search bookings by id, customer, package..."
             pageSize={8}
+            loading={loading}
             enableRowSelection
             getRowId={(row) => (row as BookingRow).id}
             renderToolbar={(table) => {
@@ -843,18 +889,20 @@ export default function AdminBookingsPage() {
                     onClick={() =>
                       exportBookings({ format: "csv", exportRows, scope })
                     }
+                    disabled={loading || Boolean(exporting)}
                     className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                   >
-                    Export CSV
+                    {exporting === "csv" ? "Exporting..." : "Export CSV"}
                   </button>
                   <button
                     type="button"
                     onClick={() =>
                       exportBookings({ format: "xlsx", exportRows, scope })
                     }
+                    disabled={loading || Boolean(exporting)}
                     className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                   >
-                    Export XLSX
+                    {exporting === "xlsx" ? "Exporting..." : "Export XLSX"}
                   </button>
 
                   {selectedIds.length > 0 ? (
@@ -864,22 +912,25 @@ export default function AdminBookingsPage() {
                         onClick={() => {
                           openBulkConfirm("confirm", selectedIds);
                         }}
+                        disabled={bulkUpdating}
                         className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
                       >
-                        Confirm selected
+                        {bulkUpdating ? "Updating..." : "Confirm selected"}
                       </button>
                       <button
                         type="button"
                         onClick={() => {
                           openBulkConfirm("cancel", selectedIds);
                         }}
+                        disabled={bulkUpdating}
                         className="rounded-xl bg-red-600 px-3 py-2 text-xs font-extrabold text-white hover:bg-red-700"
                       >
-                        Cancel selected
+                        {bulkUpdating ? "Updating..." : "Cancel selected"}
                       </button>
                       <button
                         type="button"
                         onClick={() => table.resetRowSelection()}
+                        disabled={bulkUpdating}
                         className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                       >
                         Clear selection
@@ -896,6 +947,7 @@ export default function AdminBookingsPage() {
                       onChange={(e) =>
                         statusCol?.setFilterValue(e.target.value)
                       }
+                      disabled={loading || Boolean(exporting) || bulkUpdating}
                       className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
                     >
                       <option value="all">All</option>
@@ -913,6 +965,7 @@ export default function AdminBookingsPage() {
                       table.resetRowSelection();
                       closeBulkConfirm();
                     }}
+                    disabled={loading || Boolean(exporting) || bulkUpdating}
                     className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                   >
                     Reset

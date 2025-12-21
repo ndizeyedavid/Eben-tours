@@ -55,6 +55,7 @@ export default function AdminRevenuePage() {
   const [toast, setToast] = useState<null | string>(null);
 
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState<null | "csv" | "xlsx">(null);
   const [data, setData] = useState<RevenuePoint[]>([]);
   const [kpis, setKpis] = useState({
     totalRevenue: 0,
@@ -98,7 +99,8 @@ export default function AdminRevenuePage() {
     window.setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
-  const exportRevenue = (format: "csv" | "xlsx") => {
+  const exportRevenue = async (format: "csv" | "xlsx") => {
+    if (exporting) return;
     const exportData: RevenueExportRow[] = data.map((d) => ({
       period,
       label: d.label,
@@ -111,50 +113,55 @@ export default function AdminRevenuePage() {
     const stamp = new Date().toISOString().slice(0, 10);
     const base = `revenue_${period}_${stamp}`;
 
-    if (format === "csv") {
-      const headers: (keyof RevenueExportRow)[] = [
-        "period",
-        "label",
-        "revenue",
-        "bookings",
-        "avg_order_value",
-      ];
+    setExporting(format);
+    try {
+      if (format === "csv") {
+        const headers: (keyof RevenueExportRow)[] = [
+          "period",
+          "label",
+          "revenue",
+          "bookings",
+          "avg_order_value",
+        ];
 
-      const esc = (v: unknown) => {
-        const s = String(v ?? "");
-        if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-        return s;
-      };
+        const esc = (v: unknown) => {
+          const s = String(v ?? "");
+          if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+          return s;
+        };
 
-      const csv = [
-        headers.join(","),
-        ...exportData.map((row) => headers.map((h) => esc(row[h])).join(",")),
-      ].join("\n");
+        const csv = [
+          headers.join(","),
+          ...exportData.map((row) => headers.map((h) => esc(row[h])).join(",")),
+        ].join("\n");
 
-      downloadBlob(
-        new Blob([csv], { type: "text/csv;charset=utf-8" }),
-        `${base}.csv`
-      );
-    } else {
-      void exportBrandedXlsx<RevenueExportRow>({
-        filename: `${base}.xlsx`,
-        sheetName: "Revenue",
-        title: "Revenue Report",
-        companyName: "Eben Tours",
-        logoUrl: "/Logo-011.png",
-        meta: [
-          { label: "Generated", value: stamp },
-          { label: "Period", value: period },
-        ],
-        columns: [
-          { header: "Period", key: "period", width: 10 },
-          { header: "Label", key: "label", width: 12 },
-          { header: "Revenue", key: "revenue", width: 12 },
-          { header: "Bookings", key: "bookings", width: 12 },
-          { header: "Avg Order Value", key: "avg_order_value", width: 16 },
-        ],
-        rows: exportData,
-      });
+        downloadBlob(
+          new Blob([csv], { type: "text/csv;charset=utf-8" }),
+          `${base}.csv`
+        );
+      } else {
+        await exportBrandedXlsx<RevenueExportRow>({
+          filename: `${base}.xlsx`,
+          sheetName: "Revenue",
+          title: "Revenue Report",
+          companyName: "Eben Tours",
+          logoUrl: "/Logo-011.png",
+          meta: [
+            { label: "Generated", value: stamp },
+            { label: "Period", value: period },
+          ],
+          columns: [
+            { header: "Period", key: "period", width: 10 },
+            { header: "Label", key: "label", width: 12 },
+            { header: "Revenue", key: "revenue", width: 12 },
+            { header: "Bookings", key: "bookings", width: 12 },
+            { header: "Avg Order Value", key: "avg_order_value", width: 16 },
+          ],
+          rows: exportData,
+        });
+      }
+    } finally {
+      setExporting(null);
     }
 
     const time = "Just now";
@@ -201,6 +208,7 @@ export default function AdminRevenuePage() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as Period)}
+            disabled={loading || Boolean(exporting)}
             className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
           >
             <option value="7d">Last 7 days</option>
@@ -209,21 +217,24 @@ export default function AdminRevenuePage() {
           </select>
           <button
             type="button"
-            onClick={() => exportRevenue("csv")}
+            onClick={() => void exportRevenue("csv")}
+            disabled={loading || Boolean(exporting)}
             className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
           >
-            Export CSV
+            {exporting === "csv" ? "Exporting..." : "Export CSV"}
           </button>
           <button
             type="button"
-            onClick={() => exportRevenue("xlsx")}
+            onClick={() => void exportRevenue("xlsx")}
+            disabled={loading || Boolean(exporting)}
             className="rounded-xl bg-[var(--color-secondary)] px-4 py-2 text-xs font-extrabold text-white hover:opacity-90"
           >
-            Export XLSX
+            {exporting === "xlsx" ? "Exporting..." : "Export XLSX"}
           </button>
           <button
             type="button"
             onClick={() => void fetchRevenue(period)}
+            disabled={loading || Boolean(exporting)}
             className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
           >
             {loading ? "Loading..." : "Refresh"}

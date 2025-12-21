@@ -19,6 +19,13 @@ enum PackageStatus {
   disabled
 }
 
+enum PackageCountry {
+  rwanda
+  kenya
+  tanzania
+  uganda
+}
+
 enum BlogStatus {
   draft
   published
@@ -82,10 +89,17 @@ model Package {
   id          String        @id @default(cuid())
   publicId    String        @unique
   title       String
+  country     PackageCountry @default(rwanda)
   location    String
   durationDays Int
   price       Int
   maxGroup    Int
+  imageUrl    String?
+  description String?
+  itinerary   Json?
+  inclusions  Json?
+  exclusions  Json?
+  info        Json?
   featured    Boolean       @default(false)
   status      PackageStatus @default(active)
   createdAt   DateTime      @default(now())

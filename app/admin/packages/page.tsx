@@ -12,53 +12,15 @@ type PackageStatus = "active" | "draft" | "disabled";
 
 type PackageRow = {
   id: string;
-  externalId?: string | null;
   title: string;
   location: string;
   durationDays: number;
   price: number;
-  minGroup?: number;
   maxGroup: number;
   featured: boolean;
   status: PackageStatus;
   updatedAt: string;
 };
-
-const seedPackages: PackageRow[] = [
-  {
-    id: "PKG-1001",
-    title: "Volcano & Gorilla Trekking",
-    location: "Ruhengeri, Rwanda",
-    durationDays: 5,
-    price: 650,
-    maxGroup: 8,
-    featured: true,
-    status: "active",
-    updatedAt: "2025-12-02",
-  },
-  {
-    id: "PKG-1002",
-    title: "Akagera Big Five Safari",
-    location: "Akagera, Rwanda",
-    durationDays: 3,
-    price: 480,
-    maxGroup: 12,
-    featured: false,
-    status: "active",
-    updatedAt: "2025-11-18",
-  },
-  {
-    id: "PKG-1003",
-    title: "Nyungwe Chimpanzee Trek",
-    location: "Nyungwe, Rwanda",
-    durationDays: 2,
-    price: 420,
-    maxGroup: 10,
-    featured: false,
-    status: "draft",
-    updatedAt: "2025-12-10",
-  },
-];
 
 function StatusPill({ status }: { status: PackageStatus }) {
   const styles =
@@ -88,13 +50,10 @@ function FeaturedPill({ featured }: { featured: boolean }) {
   );
 }
 
-function newId(prefix: string) {
-  return `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
-}
-
 export default function AdminPackagesPage() {
   const { pushActivity, pushAudit, pushNotification } = useAdminOps();
-  const [rows, setRows] = useState<PackageRow[]>(seedPackages);
+  const [rows, setRows] = useState<PackageRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -131,47 +90,9 @@ export default function AdminPackagesPage() {
   const [draftLocation, setDraftLocation] = useState("");
   const [draftDuration, setDraftDuration] = useState("3");
   const [draftPrice, setDraftPrice] = useState("450");
-  const [draftMinGroup, setDraftMinGroup] = useState("2");
   const [draftMaxGroup, setDraftMaxGroup] = useState("10");
   const [draftFeatured, setDraftFeatured] = useState(false);
   const [draftStatus, setDraftStatus] = useState<PackageStatus>("active");
-
-  const [draftDescription, setDraftDescription] = useState("");
-  const [draftDestination, setDraftDestination] = useState("");
-  const [draftCoverImageUrl, setDraftCoverImageUrl] = useState("");
-  const [draftGalleryUrls, setDraftGalleryUrls] = useState("");
-  const [draftPriceNote, setDraftPriceNote] = useState("");
-
-  const [draftItineraryJson, setDraftItineraryJson] = useState("");
-  const [draftInclusionsJson, setDraftInclusionsJson] = useState("");
-  const [draftExclusionsJson, setDraftExclusionsJson] = useState("");
-  const [draftInfoJson, setDraftInfoJson] = useState("");
-
-  const [draftSupportPhone, setDraftSupportPhone] = useState("");
-  const [draftSupportEmail, setDraftSupportEmail] = useState("");
-  const [draftWhatsappUrl, setDraftWhatsappUrl] = useState("");
-
-  const fetchPackages = useCallback(async () => {
-    setLoadError(null);
-    setLoading(true);
-    try {
-      const res = await axios.get("/api/admin/packages");
-      const list = Array.isArray(res.data?.packages) ? res.data.packages : [];
-      setRows(list.map(toRow));
-    } catch (e: any) {
-      setLoadError(
-        e?.response?.data?.error
-          ? String(e.response.data.error)
-          : "Could not load packages."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPackages();
-  }, [fetchPackages]);
 
   const openCreate = useCallback(() => {
     setEditingId(null);
@@ -179,47 +100,9 @@ export default function AdminPackagesPage() {
     setDraftLocation("");
     setDraftDuration("3");
     setDraftPrice("450");
-    setDraftMinGroup("2");
     setDraftMaxGroup("10");
     setDraftFeatured(false);
     setDraftStatus("active");
-
-    setDraftDescription("");
-    setDraftDestination("");
-    setDraftCoverImageUrl("");
-    setDraftGalleryUrls("");
-    setDraftPriceNote("");
-
-    setDraftItineraryJson(
-      JSON.stringify(
-        [
-          {
-            time: "04:00 AM",
-            title: "Departure",
-            description: "Describe the departure step...",
-          },
-        ],
-        null,
-        2
-      )
-    );
-    setDraftInclusionsJson(JSON.stringify([], null, 2));
-    setDraftExclusionsJson(JSON.stringify([], null, 2));
-    setDraftInfoJson(
-      JSON.stringify(
-        {
-          whatToBring: "",
-          physicalRequirements: "",
-          bestTimeToVisit: "",
-        },
-        null,
-        2
-      )
-    );
-
-    setDraftSupportPhone("(+250) 786 140 897");
-    setDraftSupportEmail("administration@ebenconnections.com");
-    setDraftWhatsappUrl("https://wa.me/+250786140897");
     setDrawerOpen(true);
   }, []);
 
@@ -232,35 +115,9 @@ export default function AdminPackagesPage() {
       setDraftLocation(pkg.location);
       setDraftDuration(String(pkg.durationDays));
       setDraftPrice(String(pkg.price));
-      setDraftMinGroup(String(pkg.minGroup ?? 2));
       setDraftMaxGroup(String(pkg.maxGroup));
       setDraftFeatured(pkg.featured);
       setDraftStatus(pkg.status);
-
-      setDraftDescription(pkg.description ?? "");
-      setDraftDestination(pkg.destination ?? "");
-      setDraftCoverImageUrl(pkg.coverImageUrl ?? "");
-      setDraftGalleryUrls(
-        Array.isArray(pkg.galleryImages)
-          ? pkg.galleryImages.filter(Boolean).join("\n")
-          : ""
-      );
-      setDraftPriceNote(pkg.priceNote ?? "");
-
-      setDraftItineraryJson(
-        pkg.itinerary ? JSON.stringify(pkg.itinerary, null, 2) : "[]"
-      );
-      setDraftInclusionsJson(
-        pkg.inclusions ? JSON.stringify(pkg.inclusions, null, 2) : "[]"
-      );
-      setDraftExclusionsJson(
-        pkg.exclusions ? JSON.stringify(pkg.exclusions, null, 2) : "[]"
-      );
-      setDraftInfoJson(pkg.info ? JSON.stringify(pkg.info, null, 2) : "{}");
-
-      setDraftSupportPhone(pkg.supportPhone ?? "");
-      setDraftSupportEmail(pkg.supportEmail ?? "");
-      setDraftWhatsappUrl(pkg.whatsappUrl ?? "");
       setDrawerOpen(true);
     },
     [rows]
@@ -273,63 +130,55 @@ export default function AdminPackagesPage() {
   const savePackage = useCallback(() => {
     const durationDays = Number(draftDuration);
     const price = Number(draftPrice);
-    const minGroup = Number(draftMinGroup);
     const maxGroup = Number(draftMaxGroup);
 
     if (!draftTitle.trim()) return;
     if (!draftLocation.trim()) return;
     if (!Number.isFinite(durationDays) || durationDays <= 0) return;
     if (!Number.isFinite(price) || price <= 0) return;
-    if (!Number.isFinite(minGroup) || minGroup <= 0) return;
     if (!Number.isFinite(maxGroup) || maxGroup <= 0) return;
 
-    const now = new Date().toISOString().slice(0, 10);
     const time = "Just now";
     const actionLabel = editingId ? "updated" : "created";
-    const targetId = editingId ?? newId("PKG");
+    const targetId = editingId ?? "";
 
-    setRows((prev) => {
-      if (!editingId) {
-        const created: PackageRow = {
-          id: targetId,
-          title: draftTitle.trim(),
-          location: draftLocation.trim(),
-          durationDays,
-          price,
-          maxGroup,
-          featured: draftFeatured,
-          status: draftStatus,
-          updatedAt: now,
-        };
-        return [created, ...prev];
-      }
+    const payload = {
+      title: draftTitle.trim(),
+      location: draftLocation.trim(),
+      durationDays,
+      price,
+      maxGroup,
+      featured: draftFeatured,
+      status: draftStatus,
+    };
 
-      return prev.map((r) =>
-        r.id === editingId
-          ? {
-              ...r,
-              title: draftTitle.trim(),
-              location: draftLocation.trim(),
-              durationDays,
-              price,
-              maxGroup,
-              featured: draftFeatured,
-              status: draftStatus,
-              updatedAt: now,
-            }
-          : r
-      );
-    });
+    if (editingId) {
+      void axios
+        .patch(`/api/admin/packages/${editingId}`, payload)
+        .then(() => fetchRows())
+        .catch(() => {
+          // ignore
+        });
+    } else {
+      void axios
+        .post(`/api/admin/packages`, payload)
+        .then(() => fetchRows())
+        .catch(() => {
+          // ignore
+        });
+    }
 
-        setToast(editingId ? "Package updated" : "Package created");
-        window.setTimeout(() => setToast(null), 1800);
-        setDrawerOpen(false);
+    setToast(editingId ? "Package updated" : "Package created");
+    window.setTimeout(() => setToast(null), 1800);
+    setDrawerOpen(false);
 
     pushAudit({
       entity: "package",
       action: editingId ? "update" : "create",
       actor: "Fab",
-      summary: `${targetId} ${actionLabel}: ${draftTitle.trim()}`,
+      summary: `${
+        targetId ? `${targetId} ` : ""
+      }${actionLabel}: ${draftTitle.trim()}`,
       time,
       href: "/admin/packages",
     });
@@ -350,25 +199,13 @@ export default function AdminPackagesPage() {
   }, [
     draftDuration,
     draftFeatured,
-    draftMinGroup,
     draftLocation,
     draftMaxGroup,
     draftPrice,
     draftStatus,
     draftTitle,
-    draftCoverImageUrl,
-    draftDescription,
-    draftDestination,
-    draftExclusionsJson,
-    draftGalleryUrls,
-    draftInclusionsJson,
-    draftInfoJson,
-    draftItineraryJson,
-    draftPriceNote,
-    draftSupportEmail,
-    draftSupportPhone,
-    draftWhatsappUrl,
     editingId,
+    fetchRows,
     pushActivity,
     pushAudit,
     pushNotification,
@@ -386,36 +223,54 @@ export default function AdminPackagesPage() {
 
   const confirmDisable = useCallback(() => {
     if (!confirmTargetId) return;
+    const time = "Just now";
     const deleted = rows.find((r) => r.id === confirmTargetId);
-    setRows((prev) => prev.filter((r) => r.id !== confirmTargetId));
-    setToast("Package deleted");
-    window.setTimeout(() => setToast(null), 1800);
-    closeDelete();
 
-    pushAudit({
-      entity: "package",
-      action: "delete",
-      actor: "Fab",
-      summary: `${confirmTargetId} deleted${
-        deleted ? `: ${deleted.title}` : ""
-      }`,
-      time,
-      href: "/admin/packages",
-    });
-    pushActivity({
-      title: "Package deleted",
-      meta: deleted ? deleted.title : confirmTargetId,
-      time,
-      tone: "red",
-      href: "/admin/packages",
-    });
-    pushNotification({
-      type: "system",
-      title: "Package deleted",
-      body: deleted ? deleted.title : confirmTargetId,
-      time,
-      href: "/admin/packages",
-    });
+    void axios
+      .delete(`/api/admin/packages/${confirmTargetId}`)
+      .then(() => fetchRows())
+      .then(() => {
+        setToast("Package disabled");
+        window.setTimeout(() => setToast(null), 1800);
+        closeDisable();
+
+        pushAudit({
+          entity: "package",
+          action: "update",
+          actor: "Fab",
+          summary: `${confirmTargetId} disabled${
+            deleted ? `: ${deleted.title}` : ""
+          }`,
+          time,
+          href: "/admin/packages",
+        });
+        pushActivity({
+          title: "Package disabled",
+          meta: deleted ? deleted.title : confirmTargetId,
+          time,
+          tone: "amber",
+          href: "/admin/packages",
+        });
+        pushNotification({
+          type: "system",
+          title: "Package disabled",
+          body: deleted ? deleted.title : confirmTargetId,
+          time,
+          href: "/admin/packages",
+        });
+      })
+      .catch((err) => {
+        const status = err?.response?.status as number | undefined;
+        const msg = err?.response?.data?.error as string | undefined;
+        if (status) {
+          setToast(msg || "Disable failed");
+          window.setTimeout(() => setToast(null), 2600);
+          return;
+        }
+
+        setToast("Disable failed");
+        window.setTimeout(() => setToast(null), 2600);
+      });
   }, [
     closeDisable,
     confirmTargetId,
@@ -440,15 +295,6 @@ export default function AdminPackagesPage() {
 
   const columns: ColumnDef<PackageRow>[] = useMemo(
     () => [
-      {
-        accessorKey: "externalId",
-        header: "ID",
-        cell: ({ row }) => (
-          <span className="text-xs font-extrabold text-[var(--color-secondary)]">
-            {row.original.externalId ?? row.original.id}
-          </span>
-        ),
-      },
       {
         accessorKey: "title",
         header: "Package",
@@ -626,18 +472,6 @@ export default function AdminPackagesPage() {
               </label>
               <label className="grid grid-cols-1! gap-1!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Min group
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  value={draftMinGroup}
-                  onChange={(e) => setDraftMinGroup(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
                   Max group
                 </span>
                 <input
@@ -645,162 +479,6 @@ export default function AdminPackagesPage() {
                   min={1}
                   value={draftMaxGroup}
                   onChange={(e) => setDraftMaxGroup(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-            </div>
-
-            <div className="mt-3 grid grid-cols-1! gap-3!">
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Price note
-                </span>
-                <input
-                  value={draftPriceNote}
-                  onChange={(e) => setDraftPriceNote(e.target.value)}
-                  placeholder="e.g. Based on minimum 2 people"
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-emerald-900/10 bg-white p-4">
-            <div className="text-xs font-extrabold text-[var(--muted)]">
-              DETAILS PAGE CONTENT
-            </div>
-            <div className="mt-3 grid grid-cols-1! gap-3!">
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Short description (hero)
-                </span>
-                <textarea
-                  value={draftDescription}
-                  onChange={(e) => setDraftDescription(e.target.value)}
-                  rows={4}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-
-              <div className="grid grid-cols-1! gap-3! sm:grid-cols-2">
-                <label className="grid grid-cols-1! gap-1!">
-                  <span className="text-xs font-extrabold text-[var(--muted)]">
-                    Destination
-                  </span>
-                  <input
-                    value={draftDestination}
-                    onChange={(e) => setDraftDestination(e.target.value)}
-                    placeholder="e.g. Rwanda"
-                    className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                  />
-                </label>
-                <label className="grid grid-cols-1! gap-1!">
-                  <span className="text-xs font-extrabold text-[var(--muted)]">
-                    Cover image URL
-                  </span>
-                  <input
-                    value={draftCoverImageUrl}
-                    onChange={(e) => setDraftCoverImageUrl(e.target.value)}
-                    placeholder="/canopy_walk.jpg or https://..."
-                    className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                  />
-                </label>
-              </div>
-
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Gallery images (one URL per line)
-                </span>
-                <textarea
-                  value={draftGalleryUrls}
-                  onChange={(e) => setDraftGalleryUrls(e.target.value)}
-                  rows={4}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Itinerary (JSON)
-                </span>
-                <textarea
-                  value={draftItineraryJson}
-                  onChange={(e) => setDraftItineraryJson(e.target.value)}
-                  rows={6}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Inclusions (JSON)
-                </span>
-                <textarea
-                  value={draftInclusionsJson}
-                  onChange={(e) => setDraftInclusionsJson(e.target.value)}
-                  rows={6}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Exclusions (JSON)
-                </span>
-                <textarea
-                  value={draftExclusionsJson}
-                  onChange={(e) => setDraftExclusionsJson(e.target.value)}
-                  rows={6}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Info (JSON)
-                </span>
-                <textarea
-                  value={draftInfoJson}
-                  onChange={(e) => setDraftInfoJson(e.target.value)}
-                  rows={6}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-emerald-900/10 bg-white p-4">
-            <div className="text-xs font-extrabold text-[var(--muted)]">
-              SUPPORT CONTACTS
-            </div>
-            <div className="mt-3 grid grid-cols-1! gap-3! sm:grid-cols-2">
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Support phone
-                </span>
-                <input
-                  value={draftSupportPhone}
-                  onChange={(e) => setDraftSupportPhone(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-              <label className="grid grid-cols-1! gap-1!">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  Support email
-                </span>
-                <input
-                  value={draftSupportEmail}
-                  onChange={(e) => setDraftSupportEmail(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
-                />
-              </label>
-              <label className="grid grid-cols-1! gap-1! sm:col-span-2">
-                <span className="text-xs font-extrabold text-[var(--muted)]">
-                  WhatsApp URL
-                </span>
-                <input
-                  value={draftWhatsappUrl}
-                  onChange={(e) => setDraftWhatsappUrl(e.target.value)}
                   className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
                 />
               </label>
@@ -921,24 +599,15 @@ export default function AdminPackagesPage() {
         </div>
 
         <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm sm:p-5">
-          {loading ? (
-            <div className="rounded-2xl border border-emerald-900/10 bg-[#f6f8f7] p-4 text-sm font-semibold text-[var(--muted)]">
-              Loading packages...
-            </div>
-          ) : loadError ? (
-            <div className="rounded-2xl border border-red-900/10 bg-red-50 p-4 text-sm font-semibold text-red-700">
-              {loadError}
-            </div>
-          ) : (
-            <AdminDataTable
-              data={rows}
-              columns={columns}
-              searchPlaceholder="Search packages by id, name, location..."
-              pageSize={8}
-              getRowId={(row) => (row as PackageRow).id}
-              renderToolbar={(table) => {
-                const statusCol = table.getColumn("status");
-                const value = (statusCol?.getFilterValue() as string) ?? "all";
+          <AdminDataTable
+            data={rows}
+            columns={columns}
+            searchPlaceholder="Search packages by name, location..."
+            pageSize={8}
+            getRowId={(row) => (row as PackageRow).id}
+            renderToolbar={(table) => {
+              const statusCol = table.getColumn("status");
+              const value = (statusCol?.getFilterValue() as string) ?? "all";
 
               return (
                 <div className="flex flex-wrap items-center gap-2">
@@ -954,8 +623,9 @@ export default function AdminPackagesPage() {
                       className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
                     >
                       <option value="all">All</option>
-                      <option value="active">Active</option>
                       <option value="draft">Draft</option>
+                      <option value="active">Active</option>
+                      <option value="disabled">Disabled</option>
                     </select>
                   </div>
 
@@ -968,6 +638,16 @@ export default function AdminPackagesPage() {
                     className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                   >
                     Reset
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void fetchRows();
+                    }}
+                    className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+                  >
+                    {loading ? "Loading..." : "Refresh"}
                   </button>
                 </div>
               );

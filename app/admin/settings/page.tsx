@@ -58,7 +58,7 @@ export default function AdminSettingsPage() {
         </button>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2!">
         <div className="space-y-3">
           <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm">
             <div className="text-sm font-extrabold text-[var(--color-secondary)]">
@@ -68,8 +68,8 @@ export default function AdminSettingsPage() {
               How you appear in the admin dashboard.
             </div>
 
-            <div className="mt-4 grid gap-3">
-              <label className="grid gap-1">
+            <div className="mt-4 grid grid-cols-1! gap-3!">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Name
                 </span>
@@ -79,7 +79,7 @@ export default function AdminSettingsPage() {
                   className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
                 />
               </label>
-              <label className="grid gap-1">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Role
                 </span>
@@ -89,7 +89,7 @@ export default function AdminSettingsPage() {
                   className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
                 />
               </label>
-              <label className="grid gap-1">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Email
                 </span>
@@ -110,8 +110,8 @@ export default function AdminSettingsPage() {
               Used for invoices, contact, and site content.
             </div>
 
-            <div className="mt-4 grid gap-3">
-              <label className="grid gap-1">
+            <div className="mt-4 grid grid-cols-2! gap-3!">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Company name
                 </span>
@@ -121,7 +121,7 @@ export default function AdminSettingsPage() {
                   className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
                 />
               </label>
-              <label className="grid gap-1">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Support phone
                 </span>
@@ -188,8 +188,8 @@ export default function AdminSettingsPage() {
               Update your password.
             </div>
 
-            <div className="mt-4 grid gap-3">
-              <label className="grid gap-1">
+            <div className="mt-4 grid grid-cols-1! gap-3!">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Current password
                 </span>
@@ -200,7 +200,7 @@ export default function AdminSettingsPage() {
                   className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
                 />
               </label>
-              <label className="grid gap-1">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   New password
                 </span>
@@ -211,7 +211,7 @@ export default function AdminSettingsPage() {
                   className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
                 />
               </label>
-              <label className="grid gap-1">
+              <label className="grid grid-cols-1! gap-3!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Confirm new password
                 </span>
@@ -242,38 +242,6 @@ export default function AdminSettingsPage() {
               <div className="text-xs font-semibold text-[var(--muted)]">
                 Mock only. Next step: connect to authentication provider.
               </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm">
-            <div className="text-sm font-extrabold text-[var(--color-secondary)]">
-              Danger zone
-            </div>
-            <div className="mt-1 text-sm font-semibold text-[var(--muted)]">
-              Destructive actions should require confirmation.
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setToast("Logout action (mock)");
-                  window.setTimeout(() => setToast(null), 1800);
-                }}
-                className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
-              >
-                Logout
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setToast("Account deactivation flow (mock)");
-                  window.setTimeout(() => setToast(null), 1800);
-                }}
-                className="rounded-xl border border-red-900/10 bg-white px-4 py-2 text-xs font-extrabold text-red-700 hover:bg-red-50"
-              >
-                Deactivate account
-              </button>
             </div>
           </div>
         </div>

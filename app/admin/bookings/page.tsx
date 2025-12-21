@@ -395,7 +395,7 @@ export default function AdminBookingsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 rounded-2xl border border-emerald-900/10 bg-white p-3">
+              <div className="mt-4 gap-3 rounded-2xl border border-emerald-900/10 bg-white p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-extrabold text-[var(--muted)]">
                     DETAILS
@@ -468,7 +468,7 @@ export default function AdminBookingsPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2!">
               <div className="rounded-2xl border border-emerald-900/10 bg-white p-4">
                 <div className="mb-3 text-xs font-extrabold text-[var(--muted)]">
                   CONTACT

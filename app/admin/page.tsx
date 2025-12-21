@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2! lg:grid-cols-4!">
         <AdminKpiCard
           title="Total Bookings"
           value="2,547"
@@ -44,9 +44,9 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3!">
         <div className="lg:col-span-2">
-          <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm sm:p-5">
+          <div className="rounded-2xl mb-4 border border-emerald-900/10 bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-sm font-extrabold text-[var(--color-secondary)]">
@@ -67,12 +67,10 @@ export default function AdminDashboardPage() {
 
             <BookingTrendsChart />
           </div>
+          <AdminAuditLog />
         </div>
 
         <div className="space-y-4">
-          <AdminActivityFeed />
-          <AdminAuditLog />
-
           <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4">
               <div className="text-sm font-extrabold text-[var(--color-secondary)]">
@@ -85,6 +83,7 @@ export default function AdminDashboardPage() {
 
             <RevenueBreakdownChart />
           </div>
+          <AdminActivityFeed />
         </div>
       </div>
     </div>

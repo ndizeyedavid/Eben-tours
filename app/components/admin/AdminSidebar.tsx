@@ -14,7 +14,7 @@ const navItems: Array<{
 }> = [
   { label: "Dashboard", href: "/admin", icon: "dashboard" },
   { label: "Bookings", href: "/admin/bookings", icon: "bookings" },
-  { label: "Add Packages", href: "/admin/packages", icon: "packages" },
+  { label: "Packages", href: "/admin/packages", icon: "packages" },
   { label: "Blogs", href: "/admin/blogs", icon: "blogs" },
   { label: "Customers", href: "/admin/customers", icon: "customers" },
   { label: "Revenue", href: "/admin/revenue", icon: "revenue" },
@@ -131,7 +131,7 @@ function Icon({ name }: { name: (typeof navItems)[number]["icon"] }) {
 
 export default function AdminSidebar() {
   return (
-    <aside className="hidden w-[260px] shrink-0 border-r border-emerald-900/10 bg-white px-4 py-6 lg:block">
+    <aside className="fixed left-0 top-0 hidden h-screen w-[260px] shrink-0 overflow-y-auto border-r border-emerald-900/10 bg-white px-4 py-6 lg:block">
       <div className="mb-6">
         <div className="text-lg font-extrabold tracking-tight text-[var(--color-secondary)]">
           Eben Tours

@@ -47,7 +47,7 @@ export default function AdminTopbar() {
   const recent = useMemo(() => notifications.slice(0, 6), [notifications]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-emerald-900/10 bg-white/80 backdrop-blur-xl">
+    <header className="border-b border-emerald-900/10 bg-white/80 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3 p-4 sm:p-6">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-[var(--color-primary)] sm:flex">

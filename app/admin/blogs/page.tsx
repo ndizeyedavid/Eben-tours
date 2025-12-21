@@ -6,9 +6,9 @@ import AdminConfirmModal from "@/app/components/admin/AdminConfirmModal";
 import AdminDataTable from "@/app/components/admin/table/AdminDataTable";
 import AdminDrawer from "@/app/components/admin/AdminDrawer";
 import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
-import AdminRichTextEditor, {
-  TipTapDoc,
-} from "@/app/components/admin/AdminRichTextEditor";
+import AdminQuillEditor, {
+  QuillDelta,
+} from "@/app/components/admin/AdminQuillEditor";
 
 type PostStatus = "draft" | "published";
 
@@ -20,7 +20,7 @@ type BlogRow = {
   status: PostStatus;
   readTime: string;
   updatedAt: string;
-  content: TipTapDoc;
+  content: QuillDelta;
 };
 
 const seedPosts: BlogRow[] = [
@@ -33,21 +33,12 @@ const seedPosts: BlogRow[] = [
     readTime: "6 min",
     updatedAt: "2025-12-12",
     content: {
-      type: "doc",
-      content: [
+      ops: [
+        { insert: "Top 7 Experiences in Rwanda\n" },
+        { attributes: { header: 2 }, insert: "\n" },
         {
-          type: "heading",
-          attrs: { level: 2 },
-          content: [{ type: "text", text: "Top 7 Experiences in Rwanda" }],
-        },
-        {
-          type: "paragraph",
-          content: [
-            {
-              type: "text",
-              text: "Write a short intro, then list the experiences with images and tips.",
-            },
-          ],
+          insert:
+            "Write a short intro, then list the experiences with images and tips.\n",
         },
       ],
     },
@@ -61,23 +52,12 @@ const seedPosts: BlogRow[] = [
     readTime: "8 min",
     updatedAt: "2025-12-18",
     content: {
-      type: "doc",
-      content: [
+      ops: [
+        { insert: "How to Prepare for Gorilla Trekking\n" },
+        { attributes: { header: 2 }, insert: "\n" },
         {
-          type: "heading",
-          attrs: { level: 2 },
-          content: [
-            { type: "text", text: "How to Prepare for Gorilla Trekking" },
-          ],
-        },
-        {
-          type: "paragraph",
-          content: [
-            {
-              type: "text",
-              text: "Add essentials: clothing, fitness, permits, camera tips, and timing.",
-            },
-          ],
+          insert:
+            "Add essentials: clothing, fitness, permits, camera tips, and timing.\n",
         },
       ],
     },
@@ -121,9 +101,8 @@ export default function AdminBlogsPage() {
   const [draftCategory, setDraftCategory] = useState("Travel Guides");
   const [draftStatus, setDraftStatus] = useState<PostStatus>("draft");
   const [draftReadTime, setDraftReadTime] = useState("6 min");
-  const [draftContent, setDraftContent] = useState<TipTapDoc>({
-    type: "doc",
-    content: [{ type: "paragraph" }],
+  const [draftContent, setDraftContent] = useState<QuillDelta>({
+    ops: [{ insert: "\n" }],
   });
 
   const openCreate = useCallback(() => {
@@ -132,7 +111,7 @@ export default function AdminBlogsPage() {
     setDraftCategory("Travel Guides");
     setDraftStatus("draft");
     setDraftReadTime("6 min");
-    setDraftContent({ type: "doc", content: [{ type: "paragraph" }] });
+    setDraftContent({ ops: [{ insert: "\n" }] });
     setDrawerOpen(true);
   }, []);
 
@@ -435,8 +414,8 @@ export default function AdminBlogsPage() {
             <div className="text-xs font-extrabold text-[var(--muted)]">
               EDITOR
             </div>
-            <div className="mt-3 grid gap-3">
-              <label className="grid gap-1">
+            <div className="mt-3 grid grid-cols-1! gap-3!">
+              <label className="grid grid-cols-1! gap-1!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Title
                 </span>
@@ -448,8 +427,8 @@ export default function AdminBlogsPage() {
                 />
               </label>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-1">
+              <div className="grid gap-3 sm:grid-cols-2!">
+                <label className="grid-cols-1! gap-1!">
                   <span className="text-xs font-extrabold text-[var(--muted)]">
                     Category
                   </span>
@@ -464,7 +443,7 @@ export default function AdminBlogsPage() {
                     <option>News</option>
                   </select>
                 </label>
-                <label className="grid gap-1">
+                <label className="grid-cols-1! gap-1!">
                   <span className="text-xs font-extrabold text-[var(--muted)]">
                     Status
                   </span>
@@ -481,7 +460,7 @@ export default function AdminBlogsPage() {
                 </label>
               </div>
 
-              <label className="grid gap-1">
+              <label className="grid grid-cols-1! gap-1!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Read time
                 </span>
@@ -493,14 +472,13 @@ export default function AdminBlogsPage() {
                 />
               </label>
 
-              <label className="grid gap-1">
+              <label className="grid grid-cols-1! gap-1!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
                   Content
                 </span>
-                <AdminRichTextEditor
+                <AdminQuillEditor
                   value={draftContent}
-                  onChange={(doc) => setDraftContent(doc)}
-                  placeholder="Write your post content..."
+                  onChange={setDraftContent}
                 />
               </label>
             </div>

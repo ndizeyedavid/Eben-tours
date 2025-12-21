@@ -39,7 +39,9 @@ type AuditAction =
   | "status_change"
   | "publish"
   | "unpublish"
-  | "message";
+  | "message"
+  | "export"
+  | "print";
 
 type AdminAuditEntry = {
   id: string;

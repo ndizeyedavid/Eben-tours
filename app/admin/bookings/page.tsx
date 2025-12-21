@@ -6,6 +6,7 @@ import AdminDrawer from "@/app/components/admin/AdminDrawer";
 import AdminConfirmModal from "@/app/components/admin/AdminConfirmModal";
 import { useCallback, useMemo, useState } from "react";
 import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
+import { exportBrandedXlsx } from "@/app/components/admin/export/brandedXlsx";
 
 type BookingStatus = "pending" | "confirmed" | "cancelled";
 
@@ -13,6 +14,16 @@ type BookingRow = {
   id: string;
   customer: string;
   packageName: string;
+  date: string;
+  travellers: number;
+  amount: number;
+  status: BookingStatus;
+};
+
+type BookingExportRow = {
+  booking_id: string;
+  customer: string;
+  package: string;
   date: string;
   travellers: number;
   amount: number;
@@ -111,6 +122,39 @@ export default function AdminBookingsPage() {
     setSelectedId(id);
     setDrawerOpen(true);
   }, []);
+
+  const printBookingForm = useCallback(
+    (id: string) => {
+      const time = "Just now";
+      pushAudit({
+        entity: "booking",
+        // @ts-ignore
+        action: "print",
+        actor: "Fab",
+        summary: `Printed booking form for ${id}`,
+        time,
+        href: `/admin/bookings/print/${id}`,
+      });
+      pushActivity({
+        title: "Booking form printed",
+        meta: `${id} • Print booking form`,
+        time,
+        tone: "blue",
+        href: `/admin/bookings/print/${id}`,
+      });
+      pushNotification({
+        type: "booking",
+        title: "Booking form printed",
+        body: `Booking form opened for ${id}`,
+        time,
+        href: `/admin/bookings/print/${id}`,
+      });
+
+      const url = `/admin/bookings/print/${id}?auto=1`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    [pushActivity, pushAudit, pushNotification]
+  );
 
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
@@ -239,6 +283,119 @@ export default function AdminBookingsPage() {
     setConfirmAction(null);
   }, []);
 
+  const downloadBlob = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }, []);
+
+  const exportBookings = useCallback(
+    ({
+      format,
+      exportRows,
+      scope,
+    }: {
+      format: "csv" | "xlsx";
+      exportRows: BookingRow[];
+      scope: "selected" | "filtered";
+    }) => {
+      const exportData: BookingExportRow[] = exportRows.map((r) => ({
+        booking_id: r.id,
+        customer: r.customer,
+        package: r.packageName,
+        date: r.date,
+        travellers: r.travellers,
+        amount: r.amount,
+        status: r.status,
+      }));
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      const base = `bookings_${scope}_${stamp}`;
+
+      if (format === "csv") {
+        const headers: (keyof BookingExportRow)[] = [
+          "booking_id",
+          "customer",
+          "package",
+          "date",
+          "travellers",
+          "amount",
+          "status",
+        ];
+
+        const esc = (v: unknown) => {
+          const s = String(v ?? "");
+          if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+          return s;
+        };
+
+        const csv = [
+          headers.join(","),
+          ...exportData.map((row) => headers.map((h) => esc(row[h])).join(",")),
+        ].join("\n");
+
+        downloadBlob(
+          new Blob([csv], { type: "text/csv;charset=utf-8" }),
+          `${base}.csv`
+        );
+      } else {
+        void exportBrandedXlsx<BookingExportRow>({
+          filename: `${base}.xlsx`,
+          sheetName: "Bookings",
+          title: "Bookings Report",
+          companyName: "Eben Tours",
+          logoUrl: "/Logo-011.png",
+          meta: [
+            { label: "Generated", value: stamp },
+            { label: "Scope", value: scope },
+            { label: "Rows", value: String(exportRows.length) },
+          ],
+          columns: [
+            { header: "Booking ID", key: "booking_id", width: 16 },
+            { header: "Customer", key: "customer", width: 22 },
+            { header: "Package", key: "package", width: 28 },
+            { header: "Date", key: "date", width: 14 },
+            { header: "Travellers", key: "travellers", width: 12 },
+            { header: "Amount", key: "amount", width: 12 },
+            { header: "Status", key: "status", width: 14 },
+          ],
+          rows: exportData,
+        });
+      }
+
+      const time = "Just now";
+      const count = exportRows.length;
+      pushAudit({
+        entity: "booking",
+        action: "export",
+        actor: "Fab",
+        summary: `Exported ${count} booking(s) (${scope}) as ${format.toUpperCase()}`,
+        time,
+        href: "/admin/bookings",
+      });
+      pushActivity({
+        title: "Bookings exported",
+        meta: `${count} row(s) • ${scope} • ${format.toUpperCase()}`,
+        time,
+        tone: "blue",
+        href: "/admin/bookings",
+      });
+      pushNotification({
+        type: "booking",
+        title: "Export ready",
+        body: `Downloaded ${count} booking(s) as ${format.toUpperCase()}`,
+        time,
+        href: "/admin/bookings",
+      });
+    },
+    [downloadBlob, pushActivity, pushAudit, pushNotification]
+  );
+
   const columns: ColumnDef<BookingRow>[] = useMemo(
     () => [
       {
@@ -295,17 +452,26 @@ export default function AdminBookingsPage() {
         header: "",
         enableSorting: false,
         cell: ({ row }) => (
-          <button
-            type="button"
-            onClick={() => openDrawer(row.original.id)}
-            className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
-          >
-            View
-          </button>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => openDrawer(row.original.id)}
+              className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+            >
+              View
+            </button>
+            <button
+              type="button"
+              onClick={() => printBookingForm(row.original.id)}
+              className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
+            >
+              Print
+            </button>
+          </div>
         ),
       },
     ],
-    [openDrawer]
+    [openDrawer, printBookingForm]
   );
 
   return (
@@ -396,7 +562,7 @@ export default function AdminBookingsPage() {
               </div>
 
               <div className="mt-4 gap-3 rounded-2xl border border-emerald-900/10 bg-white p-3">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="text-xs font-extrabold text-[var(--muted)]">
                     DETAILS
                   </div>
@@ -428,7 +594,7 @@ export default function AdminBookingsPage() {
                   )}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2!">
                   <div className="rounded-2xl border border-emerald-900/10 bg-[#f6f8f7] p-3">
                     <div className="text-[11px] font-extrabold text-[var(--muted)]">
                       DATE
@@ -603,6 +769,13 @@ export default function AdminBookingsPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
+                  onClick={() => printBookingForm(selected.id)}
+                  className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+                >
+                  Print booking form
+                </button>
+                <button
+                  type="button"
                   onClick={() => setStatus("pending")}
                   className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                 >
@@ -657,8 +830,38 @@ export default function AdminBookingsPage() {
                 .getSelectedRowModel()
                 .rows.map((r) => (r.original as BookingRow).id);
 
+              const selectedRows = table
+                .getSelectedRowModel()
+                .rows.map((r) => r.original as BookingRow);
+              const filteredRows = table
+                .getFilteredRowModel()
+                .rows.map((r) => r.original as BookingRow);
+
+              const exportRows =
+                selectedRows.length > 0 ? selectedRows : filteredRows;
+              const scope = selectedRows.length > 0 ? "selected" : "filtered";
+
               return (
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      exportBookings({ format: "csv", exportRows, scope })
+                    }
+                    className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      exportBookings({ format: "xlsx", exportRows, scope })
+                    }
+                    className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+                  >
+                    Export XLSX
+                  </button>
+
                   {selectedIds.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <button

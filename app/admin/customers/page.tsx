@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import AdminDataTable from "@/app/components/admin/table/AdminDataTable";
 import AdminDrawer from "@/app/components/admin/AdminDrawer";
 import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
+import { exportBrandedXlsx } from "@/app/components/admin/export/brandedXlsx";
 
 type Segment = "vip" | "new" | "returning";
 
@@ -17,6 +18,17 @@ type CustomerRow = {
   bookings: number;
   lastBooking: string;
   lifetimeValue: number;
+};
+
+type CustomerExportRow = {
+  customer_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  segment: Segment;
+  bookings: number;
+  last_booking: string;
+  lifetime_value: number;
 };
 
 const seedCustomers: CustomerRow[] = [
@@ -122,6 +134,122 @@ export default function AdminCustomersPage() {
   const closeProfile = useCallback(() => {
     setDrawerOpen(false);
   }, []);
+
+  const downloadBlob = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }, []);
+
+  const exportCustomers = useCallback(
+    ({
+      format,
+      exportRows,
+      scope,
+    }: {
+      format: "csv" | "xlsx";
+      exportRows: CustomerRow[];
+      scope: "selected" | "filtered";
+    }) => {
+      const exportData: CustomerExportRow[] = exportRows.map((r) => ({
+        customer_id: r.id,
+        name: r.name,
+        email: r.email,
+        phone: r.phone,
+        segment: r.segment,
+        bookings: r.bookings,
+        last_booking: r.lastBooking,
+        lifetime_value: r.lifetimeValue,
+      }));
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      const base = `customers_${scope}_${stamp}`;
+
+      if (format === "csv") {
+        const headers: (keyof CustomerExportRow)[] = [
+          "customer_id",
+          "name",
+          "email",
+          "phone",
+          "segment",
+          "bookings",
+          "last_booking",
+          "lifetime_value",
+        ];
+
+        const esc = (v: unknown) => {
+          const s = String(v ?? "");
+          if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+          return s;
+        };
+
+        const csv = [
+          headers.join(","),
+          ...exportData.map((row) => headers.map((h) => esc(row[h])).join(",")),
+        ].join("\n");
+
+        downloadBlob(
+          new Blob([csv], { type: "text/csv;charset=utf-8" }),
+          `${base}.csv`
+        );
+      } else {
+        void exportBrandedXlsx<CustomerExportRow>({
+          filename: `${base}.xlsx`,
+          sheetName: "Customers",
+          title: "Customers Report",
+          companyName: "Eben Tours",
+          logoUrl: "/Logo-011.png",
+          meta: [
+            { label: "Generated", value: stamp },
+            { label: "Scope", value: scope },
+            { label: "Rows", value: String(exportRows.length) },
+          ],
+          columns: [
+            { header: "Customer ID", key: "customer_id", width: 16 },
+            { header: "Name", key: "name", width: 22 },
+            { header: "Email", key: "email", width: 26 },
+            { header: "Phone", key: "phone", width: 18 },
+            { header: "Segment", key: "segment", width: 14 },
+            { header: "Bookings", key: "bookings", width: 12 },
+            { header: "Last Booking", key: "last_booking", width: 14 },
+            { header: "Lifetime Value", key: "lifetime_value", width: 16 },
+          ],
+          rows: exportData,
+        });
+      }
+
+      const time = "Just now";
+      const count = exportRows.length;
+      pushAudit({
+        entity: "customer",
+        action: "export",
+        actor: "Fab",
+        summary: `Exported ${count} customer(s) (${scope}) as ${format.toUpperCase()}`,
+        time,
+        href: "/admin/customers",
+      });
+      pushActivity({
+        title: "Customers exported",
+        meta: `${count} row(s) • ${scope} • ${format.toUpperCase()}`,
+        time,
+        tone: "blue",
+        href: "/admin/customers",
+      });
+      pushNotification({
+        type: "system",
+        title: "Export ready",
+        body: `Downloaded ${count} customer(s) as ${format.toUpperCase()}`,
+        time,
+        href: "/admin/customers",
+      });
+    },
+    [downloadBlob, pushActivity, pushAudit, pushNotification]
+  );
 
   const saveNote = useCallback(() => {
     if (!note.trim()) return;
@@ -440,13 +568,44 @@ export default function AdminCustomersPage() {
             columns={columns}
             searchPlaceholder="Search customers by name or email..."
             pageSize={8}
+            enableRowSelection
             getRowId={(row) => (row as CustomerRow).id}
             renderToolbar={(table) => {
               const segCol = table.getColumn("segment");
               const value = (segCol?.getFilterValue() as string) ?? "all";
 
+              const selectedRows = table
+                .getSelectedRowModel()
+                .rows.map((r) => r.original as CustomerRow);
+              const filteredRows = table
+                .getFilteredRowModel()
+                .rows.map((r) => r.original as CustomerRow);
+
+              const exportRows =
+                selectedRows.length > 0 ? selectedRows : filteredRows;
+              const scope = selectedRows.length > 0 ? "selected" : "filtered";
+
               return (
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      exportCustomers({ format: "csv", exportRows, scope })
+                    }
+                    className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      exportCustomers({ format: "xlsx", exportRows, scope })
+                    }
+                    className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+                  >
+                    Export XLSX
+                  </button>
+
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-extrabold text-[var(--muted)]">
                       Segment

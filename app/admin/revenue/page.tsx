@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
+import { exportBrandedXlsx } from "@/app/components/admin/export/brandedXlsx";
 import {
   Area,
   AreaChart,
@@ -14,6 +16,16 @@ import {
 } from "recharts";
 
 type Period = "7d" | "30d" | "90d";
+
+type RevenuePoint = { label: string; revenue: number; bookings: number };
+
+type RevenueExportRow = {
+  period: Period;
+  label: string;
+  revenue: number;
+  bookings: number;
+  avg_order_value: number;
+};
 
 const weekly = [
   { label: "Mon", revenue: 520, bookings: 5 },
@@ -53,6 +65,7 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export default function AdminRevenuePage() {
+  const { pushActivity, pushAudit, pushNotification } = useAdminOps();
   const [period, setPeriod] = useState<Period>("30d");
   const [toast, setToast] = useState<null | string>(null);
 
@@ -60,7 +73,7 @@ export default function AdminRevenuePage() {
     if (period === "7d") return weekly;
     if (period === "30d") return monthly;
     return quarterly;
-  }, [period]);
+  }, [period]) as RevenuePoint[];
 
   const kpis = useMemo(() => {
     const totalRevenue = data.reduce((a, d) => a + d.revenue, 0);
@@ -69,6 +82,104 @@ export default function AdminRevenuePage() {
       totalBookings === 0 ? 0 : Math.round(totalRevenue / totalBookings);
     return { totalRevenue, totalBookings, aov };
   }, [data]);
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  const exportRevenue = (format: "csv" | "xlsx") => {
+    const exportData: RevenueExportRow[] = data.map((d) => ({
+      period,
+      label: d.label,
+      revenue: d.revenue,
+      bookings: d.bookings,
+      avg_order_value:
+        d.bookings === 0 ? 0 : Math.round(d.revenue / d.bookings),
+    }));
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    const base = `revenue_${period}_${stamp}`;
+
+    if (format === "csv") {
+      const headers: (keyof RevenueExportRow)[] = [
+        "period",
+        "label",
+        "revenue",
+        "bookings",
+        "avg_order_value",
+      ];
+
+      const esc = (v: unknown) => {
+        const s = String(v ?? "");
+        if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+        return s;
+      };
+
+      const csv = [
+        headers.join(","),
+        ...exportData.map((row) => headers.map((h) => esc(row[h])).join(",")),
+      ].join("\n");
+
+      downloadBlob(
+        new Blob([csv], { type: "text/csv;charset=utf-8" }),
+        `${base}.csv`
+      );
+    } else {
+      void exportBrandedXlsx<RevenueExportRow>({
+        filename: `${base}.xlsx`,
+        sheetName: "Revenue",
+        title: "Revenue Report",
+        companyName: "Eben Tours",
+        logoUrl: "/Logo-011.png",
+        meta: [
+          { label: "Generated", value: stamp },
+          { label: "Period", value: period },
+        ],
+        columns: [
+          { header: "Period", key: "period", width: 10 },
+          { header: "Label", key: "label", width: 12 },
+          { header: "Revenue", key: "revenue", width: 12 },
+          { header: "Bookings", key: "bookings", width: 12 },
+          { header: "Avg Order Value", key: "avg_order_value", width: 16 },
+        ],
+        rows: exportData,
+      });
+    }
+
+    const time = "Just now";
+    pushAudit({
+      entity: "system",
+      action: "export",
+      actor: "Fab",
+      summary: `Exported revenue report (${period}) as ${format.toUpperCase()}`,
+      time,
+      href: "/admin/revenue",
+    });
+    pushActivity({
+      title: "Revenue exported",
+      meta: `Period ${period} • ${format.toUpperCase()}`,
+      time,
+      tone: "blue",
+      href: "/admin/revenue",
+    });
+    pushNotification({
+      type: "system",
+      title: "Export ready",
+      body: `Downloaded revenue report as ${format.toUpperCase()}`,
+      time,
+      href: "/admin/revenue",
+    });
+
+    setToast(`Exported ${format.toUpperCase()} (${period})`);
+    window.setTimeout(() => setToast(null), 1800);
+  };
 
   return (
     <div className="space-y-4">
@@ -94,13 +205,17 @@ export default function AdminRevenuePage() {
           </select>
           <button
             type="button"
-            onClick={() => {
-              setToast("Export started (mock)");
-              window.setTimeout(() => setToast(null), 1800);
-            }}
+            onClick={() => exportRevenue("csv")}
+            className="rounded-xl border border-emerald-900/10 bg-white px-4 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => exportRevenue("xlsx")}
             className="rounded-xl bg-[var(--color-secondary)] px-4 py-2 text-xs font-extrabold text-white hover:opacity-90"
           >
-            Export
+            Export XLSX
           </button>
         </div>
       </div>

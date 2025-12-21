@@ -1,7 +1,8 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { useCallback, useMemo, useState } from "react";
+import axios from "axios";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminConfirmModal from "@/app/components/admin/AdminConfirmModal";
 import AdminDataTable from "@/app/components/admin/table/AdminDataTable";
 import AdminDrawer from "@/app/components/admin/AdminDrawer";
@@ -23,47 +24,6 @@ type BlogRow = {
   content: QuillDelta;
 };
 
-const seedPosts: BlogRow[] = [
-  {
-    id: "BLG-2001",
-    title: "Top 7 Experiences in Rwanda",
-    category: "Travel Guides",
-    author: "Admin",
-    status: "published",
-    readTime: "6 min",
-    updatedAt: "2025-12-12",
-    content: {
-      ops: [
-        { insert: "Top 7 Experiences in Rwanda\n" },
-        { attributes: { header: 2 }, insert: "\n" },
-        {
-          insert:
-            "Write a short intro, then list the experiences with images and tips.\n",
-        },
-      ],
-    },
-  },
-  {
-    id: "BLG-2002",
-    title: "How to Prepare for Gorilla Trekking",
-    category: "Adventure",
-    author: "Admin",
-    status: "draft",
-    readTime: "8 min",
-    updatedAt: "2025-12-18",
-    content: {
-      ops: [
-        { insert: "How to Prepare for Gorilla Trekking\n" },
-        { attributes: { header: 2 }, insert: "\n" },
-        {
-          insert:
-            "Add essentials: clothing, fitness, permits, camera tips, and timing.\n",
-        },
-      ],
-    },
-  },
-];
-
 function StatusBadge({ status }: { status: PostStatus }) {
   const styles =
     status === "published"
@@ -79,18 +39,32 @@ function StatusBadge({ status }: { status: PostStatus }) {
   );
 }
 
-function newId(prefix: string) {
-  return `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
-}
-
 export default function AdminBlogsPage() {
   const { pushActivity, pushAudit, pushNotification } = useAdminOps();
-  const [rows, setRows] = useState<BlogRow[]>(seedPosts);
+  const [rows, setRows] = useState<BlogRow[]>([]);
+  const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null);
   const [toast, setToast] = useState<null | string>(null);
+
+  const fetchRows = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("/api/admin/blogs");
+      setRows((res.data?.rows ?? []) as BlogRow[]);
+    } catch (err: any) {
+      setToast("Failed to load posts");
+      window.setTimeout(() => setToast(null), 1800);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchRows();
+  }, [fetchRows]);
 
   const editing = useMemo(
     () => rows.find((r) => r.id === editingId) ?? null,
@@ -134,52 +108,47 @@ export default function AdminBlogsPage() {
     setDrawerOpen(false);
   }, []);
 
-  const savePost = useCallback(() => {
+  const savePost = useCallback(async () => {
     if (!draftTitle.trim()) return;
 
-    const now = new Date().toISOString().slice(0, 10);
     const time = "Just now";
-    const idValue = editingId ?? newId("BLG");
 
-    setRows((prev) => {
+    try {
       if (!editingId) {
-        const created: BlogRow = {
-          id: idValue,
+        await axios.post("/api/admin/blogs", {
           title: draftTitle.trim(),
           category: draftCategory,
           author: "Admin",
           status: draftStatus,
           readTime: draftReadTime,
-          updatedAt: now,
           content: draftContent,
-        };
-        return [created, ...prev];
+        });
+      } else {
+        await axios.patch(`/api/admin/blogs/${editingId}`, {
+          title: draftTitle.trim(),
+          category: draftCategory,
+          author: "Admin",
+          status: draftStatus,
+          readTime: draftReadTime,
+          content: draftContent,
+        });
       }
 
-      return prev.map((r) =>
-        r.id === editingId
-          ? {
-              ...r,
-              title: draftTitle.trim(),
-              category: draftCategory,
-              status: draftStatus,
-              readTime: draftReadTime,
-              updatedAt: now,
-              content: draftContent,
-            }
-          : r
-      );
-    });
-
-    setToast(editingId ? "Post updated" : "Draft saved");
-    window.setTimeout(() => setToast(null), 1800);
-    setDrawerOpen(false);
+      await fetchRows();
+      setToast(editingId ? "Post updated" : "Draft saved");
+      window.setTimeout(() => setToast(null), 1800);
+      setDrawerOpen(false);
+    } catch (err: any) {
+      setToast("Failed to save post");
+      window.setTimeout(() => setToast(null), 1800);
+      return;
+    }
 
     pushAudit({
       entity: "blog",
       action: editingId ? "update" : "create",
       actor: "Fab",
-      summary: `${idValue} ${
+      summary: `${editingId ?? "New post"} ${
         editingId ? "updated" : "created"
       }: ${draftTitle.trim()}`,
       time,
@@ -206,31 +175,29 @@ export default function AdminBlogsPage() {
     draftStatus,
     draftTitle,
     editingId,
+    fetchRows,
     pushActivity,
     pushAudit,
     pushNotification,
   ]);
 
   const togglePublish = useCallback(
-    (id: string) => {
-      const now = new Date().toISOString().slice(0, 10);
+    async (id: string) => {
       const time = "Just now";
       const post = rows.find((r) => r.id === id);
       const current = post?.status ?? "draft";
       const next = current === "published" ? "draft" : "published";
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                status: next,
-                updatedAt: now,
-              }
-            : r
-        )
-      );
-      setToast("Status updated");
-      window.setTimeout(() => setToast(null), 1800);
+
+      try {
+        await axios.patch(`/api/admin/blogs/${id}`, { status: next });
+        await fetchRows();
+        setToast("Status updated");
+        window.setTimeout(() => setToast(null), 1800);
+      } catch (err: any) {
+        setToast("Failed to update status");
+        window.setTimeout(() => setToast(null), 1800);
+        return;
+      }
 
       pushAudit({
         entity: "blog",
@@ -257,7 +224,7 @@ export default function AdminBlogsPage() {
         href: "/admin/blogs",
       });
     },
-    [pushActivity, pushAudit, pushNotification, rows]
+    [fetchRows, pushActivity, pushAudit, pushNotification, rows]
   );
 
   const openDelete = useCallback((id: string) => {
@@ -270,14 +237,22 @@ export default function AdminBlogsPage() {
     setConfirmTargetId(null);
   }, []);
 
-  const confirmDelete = useCallback(() => {
+  const confirmDelete = useCallback(async () => {
     if (!confirmTargetId) return;
     const time = "Just now";
     const deleted = rows.find((r) => r.id === confirmTargetId);
-    setRows((prev) => prev.filter((r) => r.id !== confirmTargetId));
-    setToast("Post deleted");
-    window.setTimeout(() => setToast(null), 1800);
-    closeDelete();
+
+    try {
+      await axios.delete(`/api/admin/blogs/${confirmTargetId}`);
+      await fetchRows();
+      setToast("Post deleted");
+      window.setTimeout(() => setToast(null), 1800);
+      closeDelete();
+    } catch (err: any) {
+      setToast("Failed to delete post");
+      window.setTimeout(() => setToast(null), 1800);
+      return;
+    }
 
     pushAudit({
       entity: "blog",
@@ -306,6 +281,7 @@ export default function AdminBlogsPage() {
   }, [
     closeDelete,
     confirmTargetId,
+    fetchRows,
     pushActivity,
     pushAudit,
     pushNotification,
@@ -401,7 +377,7 @@ export default function AdminBlogsPage() {
         variant="danger"
         onClose={closeDelete}
         onConfirm={confirmDelete}
-        footerNote="Mock action (UI state only)."
+        footerNote="This action cannot be undone."
       />
 
       <AdminDrawer

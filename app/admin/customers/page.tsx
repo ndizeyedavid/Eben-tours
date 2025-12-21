@@ -1,7 +1,8 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { useCallback, useMemo, useState } from "react";
+import axios from "axios";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminDataTable from "@/app/components/admin/table/AdminDataTable";
 import AdminDrawer from "@/app/components/admin/AdminDrawer";
 import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
@@ -18,6 +19,7 @@ type CustomerRow = {
   bookings: number;
   lastBooking: string;
   lifetimeValue: number;
+  note?: string | null;
 };
 
 type CustomerExportRow = {
@@ -86,7 +88,8 @@ function SegmentPill({ segment }: { segment: Segment }) {
 
 export default function AdminCustomersPage() {
   const { pushActivity, pushAudit, pushNotification } = useAdminOps();
-  const [rows, setRows] = useState<CustomerRow[]>(seedCustomers);
+  const [rows, setRows] = useState<CustomerRow[]>([]);
+  const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -97,14 +100,37 @@ export default function AdminCustomersPage() {
     [rows, selectedId]
   );
 
+  const fetchRows = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("/api/admin/customers");
+      const next = (res.data?.rows ?? []) as CustomerRow[];
+      setRows(next);
+
+      if (selectedId) {
+        const nextSelected = next.find((r) => r.id === selectedId);
+        if (nextSelected) setNote(nextSelected.note ?? "");
+      }
+    } catch (err: any) {
+      setToast("Failed to load customers");
+      window.setTimeout(() => setToast(null), 1800);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedId]);
+
+  useEffect(() => {
+    void fetchRows();
+  }, [fetchRows]);
+
   const openProfile = useCallback(
     (id: string) => {
       setSelectedId(id);
       setDrawerOpen(true);
-      setNote("");
+      const customer = rows.find((r) => r.id === id);
+      setNote(customer?.note ?? "");
 
       const time = "Just now";
-      const customer = rows.find((r) => r.id === id);
       pushAudit({
         entity: "customer",
         action: "update",
@@ -251,11 +277,25 @@ export default function AdminCustomersPage() {
     [downloadBlob, pushActivity, pushAudit, pushNotification]
   );
 
-  const saveNote = useCallback(() => {
-    if (!note.trim()) return;
-    setToast("Note saved (mock)");
-    window.setTimeout(() => setToast(null), 1800);
-    setNote("");
+  const saveNote = useCallback(async () => {
+    if (!selectedId) return;
+
+    try {
+      await axios.patch(`/api/admin/customers/${selectedId}`, {
+        note,
+      });
+
+      setRows((prev) =>
+        prev.map((r) => (r.id === selectedId ? { ...r, note } : r))
+      );
+
+      setToast("Note saved");
+      window.setTimeout(() => setToast(null), 1800);
+    } catch (err: any) {
+      setToast("Failed to save note");
+      window.setTimeout(() => setToast(null), 1800);
+      return;
+    }
 
     const time = "Just now";
     pushAudit({
@@ -282,7 +322,7 @@ export default function AdminCustomersPage() {
       time,
       href: "/admin/customers",
     });
-  }, [note, pushActivity, pushAudit, pushNotification, selected]);
+  }, [note, pushActivity, pushAudit, pushNotification, selected, selectedId]);
 
   const kpis = useMemo(() => {
     const vip = rows.filter((r) => r.segment === "vip").length;

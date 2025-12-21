@@ -1,61 +1,41 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminConfirmModal from "@/app/components/admin/AdminConfirmModal";
 import AdminDataTable from "@/app/components/admin/table/AdminDataTable";
 import AdminDrawer from "@/app/components/admin/AdminDrawer";
 import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
+import axios from "axios";
 
 type PackageStatus = "active" | "draft";
 
 type PackageRow = {
   id: string;
+  externalId?: string | null;
   title: string;
   location: string;
   durationDays: number;
   price: number;
+  minGroup?: number;
   maxGroup: number;
   featured: boolean;
   status: PackageStatus;
   updatedAt: string;
-};
 
-const seedPackages: PackageRow[] = [
-  {
-    id: "PKG-1001",
-    title: "Volcano & Gorilla Trekking",
-    location: "Ruhengeri, Rwanda",
-    durationDays: 5,
-    price: 650,
-    maxGroup: 8,
-    featured: true,
-    status: "active",
-    updatedAt: "2025-12-02",
-  },
-  {
-    id: "PKG-1002",
-    title: "Akagera Big Five Safari",
-    location: "Akagera, Rwanda",
-    durationDays: 3,
-    price: 480,
-    maxGroup: 12,
-    featured: false,
-    status: "active",
-    updatedAt: "2025-11-18",
-  },
-  {
-    id: "PKG-1003",
-    title: "Nyungwe Chimpanzee Trek",
-    location: "Nyungwe, Rwanda",
-    durationDays: 2,
-    price: 420,
-    maxGroup: 10,
-    featured: false,
-    status: "draft",
-    updatedAt: "2025-12-10",
-  },
-];
+  description?: string | null;
+  destination?: string | null;
+  coverImageUrl?: string | null;
+  galleryImages?: any;
+  priceNote?: string | null;
+  itinerary?: any;
+  inclusions?: any;
+  exclusions?: any;
+  info?: any;
+  supportPhone?: string | null;
+  supportEmail?: string | null;
+  whatsappUrl?: string | null;
+};
 
 function StatusPill({ status }: { status: PackageStatus }) {
   const styles =
@@ -86,9 +66,45 @@ function newId(prefix: string) {
   return `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+function toRow(p: any): PackageRow {
+  const updated = p?.updatedAt ? new Date(p.updatedAt) : null;
+
+  return {
+    id: String(p.id),
+    externalId: p.externalId ?? null,
+    title: String(p.title ?? ""),
+    location: String(p.location ?? ""),
+    durationDays: Number(p.durationDays ?? 0),
+    price: Number(p.price ?? 0),
+    minGroup:
+      p.minGroup === undefined || p.minGroup === null
+        ? undefined
+        : Number(p.minGroup),
+    maxGroup: Number(p.maxGroup ?? 0),
+    featured: Boolean(p.featured ?? false),
+    status: p.status === "draft" ? "draft" : "active",
+    updatedAt: updated ? updated.toISOString().slice(0, 10) : "",
+
+    description: p.description ?? null,
+    destination: p.destination ?? null,
+    coverImageUrl: p.coverImageUrl ?? null,
+    galleryImages: p.galleryImages ?? null,
+    priceNote: p.priceNote ?? null,
+    itinerary: p.itinerary ?? null,
+    inclusions: p.inclusions ?? null,
+    exclusions: p.exclusions ?? null,
+    info: p.info ?? null,
+    supportPhone: p.supportPhone ?? null,
+    supportEmail: p.supportEmail ?? null,
+    whatsappUrl: p.whatsappUrl ?? null,
+  };
+}
+
 export default function AdminPackagesPage() {
   const { pushActivity, pushAudit, pushNotification } = useAdminOps();
-  const [rows, setRows] = useState<PackageRow[]>(seedPackages);
+  const [rows, setRows] = useState<PackageRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<null | string>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -104,9 +120,47 @@ export default function AdminPackagesPage() {
   const [draftLocation, setDraftLocation] = useState("");
   const [draftDuration, setDraftDuration] = useState("3");
   const [draftPrice, setDraftPrice] = useState("450");
+  const [draftMinGroup, setDraftMinGroup] = useState("2");
   const [draftMaxGroup, setDraftMaxGroup] = useState("10");
   const [draftFeatured, setDraftFeatured] = useState(false);
   const [draftStatus, setDraftStatus] = useState<PackageStatus>("active");
+
+  const [draftDescription, setDraftDescription] = useState("");
+  const [draftDestination, setDraftDestination] = useState("");
+  const [draftCoverImageUrl, setDraftCoverImageUrl] = useState("");
+  const [draftGalleryUrls, setDraftGalleryUrls] = useState("");
+  const [draftPriceNote, setDraftPriceNote] = useState("");
+
+  const [draftItineraryJson, setDraftItineraryJson] = useState("");
+  const [draftInclusionsJson, setDraftInclusionsJson] = useState("");
+  const [draftExclusionsJson, setDraftExclusionsJson] = useState("");
+  const [draftInfoJson, setDraftInfoJson] = useState("");
+
+  const [draftSupportPhone, setDraftSupportPhone] = useState("");
+  const [draftSupportEmail, setDraftSupportEmail] = useState("");
+  const [draftWhatsappUrl, setDraftWhatsappUrl] = useState("");
+
+  const fetchPackages = useCallback(async () => {
+    setLoadError(null);
+    setLoading(true);
+    try {
+      const res = await axios.get("/api/admin/packages");
+      const list = Array.isArray(res.data?.packages) ? res.data.packages : [];
+      setRows(list.map(toRow));
+    } catch (e: any) {
+      setLoadError(
+        e?.response?.data?.error
+          ? String(e.response.data.error)
+          : "Could not load packages."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPackages();
+  }, [fetchPackages]);
 
   const openCreate = useCallback(() => {
     setEditingId(null);
@@ -114,9 +168,47 @@ export default function AdminPackagesPage() {
     setDraftLocation("");
     setDraftDuration("3");
     setDraftPrice("450");
+    setDraftMinGroup("2");
     setDraftMaxGroup("10");
     setDraftFeatured(false);
     setDraftStatus("active");
+
+    setDraftDescription("");
+    setDraftDestination("");
+    setDraftCoverImageUrl("");
+    setDraftGalleryUrls("");
+    setDraftPriceNote("");
+
+    setDraftItineraryJson(
+      JSON.stringify(
+        [
+          {
+            time: "04:00 AM",
+            title: "Departure",
+            description: "Describe the departure step...",
+          },
+        ],
+        null,
+        2
+      )
+    );
+    setDraftInclusionsJson(JSON.stringify([], null, 2));
+    setDraftExclusionsJson(JSON.stringify([], null, 2));
+    setDraftInfoJson(
+      JSON.stringify(
+        {
+          whatToBring: "",
+          physicalRequirements: "",
+          bestTimeToVisit: "",
+        },
+        null,
+        2
+      )
+    );
+
+    setDraftSupportPhone("(+250) 786 140 897");
+    setDraftSupportEmail("administration@ebenconnections.com");
+    setDraftWhatsappUrl("https://wa.me/+250786140897");
     setDrawerOpen(true);
   }, []);
 
@@ -129,9 +221,35 @@ export default function AdminPackagesPage() {
       setDraftLocation(pkg.location);
       setDraftDuration(String(pkg.durationDays));
       setDraftPrice(String(pkg.price));
+      setDraftMinGroup(String(pkg.minGroup ?? 2));
       setDraftMaxGroup(String(pkg.maxGroup));
       setDraftFeatured(pkg.featured);
       setDraftStatus(pkg.status);
+
+      setDraftDescription(pkg.description ?? "");
+      setDraftDestination(pkg.destination ?? "");
+      setDraftCoverImageUrl(pkg.coverImageUrl ?? "");
+      setDraftGalleryUrls(
+        Array.isArray(pkg.galleryImages)
+          ? pkg.galleryImages.filter(Boolean).join("\n")
+          : ""
+      );
+      setDraftPriceNote(pkg.priceNote ?? "");
+
+      setDraftItineraryJson(
+        pkg.itinerary ? JSON.stringify(pkg.itinerary, null, 2) : "[]"
+      );
+      setDraftInclusionsJson(
+        pkg.inclusions ? JSON.stringify(pkg.inclusions, null, 2) : "[]"
+      );
+      setDraftExclusionsJson(
+        pkg.exclusions ? JSON.stringify(pkg.exclusions, null, 2) : "[]"
+      );
+      setDraftInfoJson(pkg.info ? JSON.stringify(pkg.info, null, 2) : "{}");
+
+      setDraftSupportPhone(pkg.supportPhone ?? "");
+      setDraftSupportEmail(pkg.supportEmail ?? "");
+      setDraftWhatsappUrl(pkg.whatsappUrl ?? "");
       setDrawerOpen(true);
     },
     [rows]
@@ -144,87 +262,192 @@ export default function AdminPackagesPage() {
   const savePackage = useCallback(() => {
     const durationDays = Number(draftDuration);
     const price = Number(draftPrice);
+    const minGroup = Number(draftMinGroup);
     const maxGroup = Number(draftMaxGroup);
 
     if (!draftTitle.trim()) return;
     if (!draftLocation.trim()) return;
     if (!Number.isFinite(durationDays) || durationDays <= 0) return;
     if (!Number.isFinite(price) || price <= 0) return;
+    if (!Number.isFinite(minGroup) || minGroup <= 0) return;
     if (!Number.isFinite(maxGroup) || maxGroup <= 0) return;
 
-    const now = new Date().toISOString().slice(0, 10);
-    const time = "Just now";
+    const galleryImages = draftGalleryUrls
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    let itinerary: any = undefined;
+    let inclusions: any = undefined;
+    let exclusions: any = undefined;
+    let info: any = undefined;
+
+    try {
+      itinerary = draftItineraryJson.trim()
+        ? JSON.parse(draftItineraryJson)
+        : undefined;
+      inclusions = draftInclusionsJson.trim()
+        ? JSON.parse(draftInclusionsJson)
+        : undefined;
+      exclusions = draftExclusionsJson.trim()
+        ? JSON.parse(draftExclusionsJson)
+        : undefined;
+      info = draftInfoJson.trim() ? JSON.parse(draftInfoJson) : undefined;
+    } catch {
+      setToast("Invalid JSON in details sections");
+      window.setTimeout(() => setToast(null), 2200);
+      return;
+    }
+
     const actionLabel = editingId ? "updated" : "created";
-    const targetId = editingId ?? newId("PKG");
+    const friendlyId = editingId
+      ? editing?.externalId ?? editingId
+      : newId("PKG");
+    const time = "Just now";
 
-    setRows((prev) => {
-      if (!editingId) {
-        const created: PackageRow = {
-          id: targetId,
-          title: draftTitle.trim(),
-          location: draftLocation.trim(),
-          durationDays,
-          price,
-          maxGroup,
-          featured: draftFeatured,
-          status: draftStatus,
-          updatedAt: now,
-        };
-        return [created, ...prev];
+    (async () => {
+      try {
+        if (!editingId) {
+          const res = await axios.post("/api/admin/packages", {
+            title: draftTitle.trim(),
+            location: draftLocation.trim(),
+            durationDays,
+            price,
+            minGroup,
+            maxGroup,
+            featured: draftFeatured,
+            status: draftStatus,
+
+            description: draftDescription.trim()
+              ? draftDescription.trim()
+              : null,
+            destination: draftDestination.trim()
+              ? draftDestination.trim()
+              : null,
+            coverImageUrl: draftCoverImageUrl.trim()
+              ? draftCoverImageUrl.trim()
+              : null,
+            galleryImages,
+            priceNote: draftPriceNote.trim() ? draftPriceNote.trim() : null,
+
+            itinerary,
+            inclusions,
+            exclusions,
+            info,
+
+            supportPhone: draftSupportPhone.trim()
+              ? draftSupportPhone.trim()
+              : null,
+            supportEmail: draftSupportEmail.trim()
+              ? draftSupportEmail.trim()
+              : null,
+            whatsappUrl: draftWhatsappUrl.trim()
+              ? draftWhatsappUrl.trim()
+              : null,
+          });
+
+          const created = res.data?.package ? toRow(res.data.package) : null;
+          if (created) setRows((prev) => [created, ...prev]);
+        } else {
+          const res = await axios.patch(`/api/admin/packages/${editingId}`, {
+            title: draftTitle.trim(),
+            location: draftLocation.trim(),
+            durationDays,
+            price,
+            minGroup,
+            maxGroup,
+            featured: draftFeatured,
+            status: draftStatus,
+
+            description: draftDescription.trim()
+              ? draftDescription.trim()
+              : null,
+            destination: draftDestination.trim()
+              ? draftDestination.trim()
+              : null,
+            coverImageUrl: draftCoverImageUrl.trim()
+              ? draftCoverImageUrl.trim()
+              : null,
+            galleryImages,
+            priceNote: draftPriceNote.trim() ? draftPriceNote.trim() : null,
+
+            itinerary,
+            inclusions,
+            exclusions,
+            info,
+
+            supportPhone: draftSupportPhone.trim()
+              ? draftSupportPhone.trim()
+              : null,
+            supportEmail: draftSupportEmail.trim()
+              ? draftSupportEmail.trim()
+              : null,
+            whatsappUrl: draftWhatsappUrl.trim()
+              ? draftWhatsappUrl.trim()
+              : null,
+          });
+
+          const updated = res.data?.package ? toRow(res.data.package) : null;
+          if (updated)
+            setRows((prev) =>
+              prev.map((r) => (r.id === editingId ? updated : r))
+            );
+        }
+
+        setToast(editingId ? "Package updated" : "Package created");
+        window.setTimeout(() => setToast(null), 1800);
+        setDrawerOpen(false);
+
+        pushAudit({
+          entity: "package",
+          action: editingId ? "update" : "create",
+          actor: "Fab",
+          summary: `${friendlyId} ${actionLabel}: ${draftTitle.trim()}`,
+          time,
+          href: "/admin/packages",
+        });
+        pushActivity({
+          title: editingId ? "Package updated" : "Package created",
+          meta: `${draftTitle.trim()} • ${draftStatus} • $${price.toFixed(0)}`,
+          time,
+          tone: draftStatus === "draft" ? "amber" : "emerald",
+          href: "/admin/packages",
+        });
+        pushNotification({
+          type: "system",
+          title: editingId ? "Package updated" : "Package created",
+          body: `${draftTitle.trim()} • ${draftStatus} • $${price.toFixed(0)}`,
+          time,
+          href: "/admin/packages",
+        });
+      } catch {
+        setToast("Save failed");
+        window.setTimeout(() => setToast(null), 1800);
       }
-
-      return prev.map((r) =>
-        r.id === editingId
-          ? {
-              ...r,
-              title: draftTitle.trim(),
-              location: draftLocation.trim(),
-              durationDays,
-              price,
-              maxGroup,
-              featured: draftFeatured,
-              status: draftStatus,
-              updatedAt: now,
-            }
-          : r
-      );
-    });
-
-    setToast(editingId ? "Package updated" : "Package created");
-    window.setTimeout(() => setToast(null), 1800);
-    setDrawerOpen(false);
-
-    pushAudit({
-      entity: "package",
-      action: editingId ? "update" : "create",
-      actor: "Fab",
-      summary: `${targetId} ${actionLabel}: ${draftTitle.trim()}`,
-      time,
-      href: "/admin/packages",
-    });
-    pushActivity({
-      title: editingId ? "Package updated" : "Package created",
-      meta: `${draftTitle.trim()} • ${draftStatus} • $${price.toFixed(0)}`,
-      time,
-      tone: draftStatus === "draft" ? "amber" : "emerald",
-      href: "/admin/packages",
-    });
-    pushNotification({
-      type: "system",
-      title: editingId ? "Package updated" : "Package created",
-      body: `${draftTitle.trim()} • ${draftStatus} • $${price.toFixed(0)}`,
-      time,
-      href: "/admin/packages",
-    });
+    })();
   }, [
     draftDuration,
     draftFeatured,
+    draftMinGroup,
     draftLocation,
     draftMaxGroup,
     draftPrice,
     draftStatus,
     draftTitle,
+    draftCoverImageUrl,
+    draftDescription,
+    draftDestination,
+    draftExclusionsJson,
+    draftGalleryUrls,
+    draftInclusionsJson,
+    draftInfoJson,
+    draftItineraryJson,
+    draftPriceNote,
+    draftSupportEmail,
+    draftSupportPhone,
+    draftWhatsappUrl,
     editingId,
+    editing,
     pushActivity,
     pushAudit,
     pushNotification,
@@ -242,37 +465,46 @@ export default function AdminPackagesPage() {
 
   const confirmDelete = useCallback(() => {
     if (!confirmTargetId) return;
-    const time = "Just now";
     const deleted = rows.find((r) => r.id === confirmTargetId);
-    setRows((prev) => prev.filter((r) => r.id !== confirmTargetId));
-    setToast("Package deleted");
-    window.setTimeout(() => setToast(null), 1800);
-    closeDelete();
+    const time = "Just now";
 
-    pushAudit({
-      entity: "package",
-      action: "delete",
-      actor: "Fab",
-      summary: `${confirmTargetId} deleted${
-        deleted ? `: ${deleted.title}` : ""
-      }`,
-      time,
-      href: "/admin/packages",
-    });
-    pushActivity({
-      title: "Package deleted",
-      meta: deleted ? deleted.title : confirmTargetId,
-      time,
-      tone: "red",
-      href: "/admin/packages",
-    });
-    pushNotification({
-      type: "system",
-      title: "Package deleted",
-      body: deleted ? deleted.title : confirmTargetId,
-      time,
-      href: "/admin/packages",
-    });
+    (async () => {
+      try {
+        await axios.delete(`/api/admin/packages/${confirmTargetId}`);
+        setRows((prev) => prev.filter((r) => r.id !== confirmTargetId));
+        setToast("Package deleted");
+        window.setTimeout(() => setToast(null), 1800);
+        closeDelete();
+
+        pushAudit({
+          entity: "package",
+          action: "delete",
+          actor: "Fab",
+          summary: `${deleted?.externalId ?? confirmTargetId} deleted${
+            deleted ? `: ${deleted.title}` : ""
+          }`,
+          time,
+          href: "/admin/packages",
+        });
+        pushActivity({
+          title: "Package deleted",
+          meta: deleted ? deleted.title : confirmTargetId,
+          time,
+          tone: "red",
+          href: "/admin/packages",
+        });
+        pushNotification({
+          type: "system",
+          title: "Package deleted",
+          body: deleted ? deleted.title : confirmTargetId,
+          time,
+          href: "/admin/packages",
+        });
+      } catch {
+        setToast("Delete failed");
+        window.setTimeout(() => setToast(null), 1800);
+      }
+    })();
   }, [
     closeDelete,
     confirmTargetId,
@@ -296,6 +528,15 @@ export default function AdminPackagesPage() {
 
   const columns: ColumnDef<PackageRow>[] = useMemo(
     () => [
+      {
+        accessorKey: "externalId",
+        header: "ID",
+        cell: ({ row }) => (
+          <span className="text-xs font-extrabold text-[var(--color-secondary)]">
+            {row.original.externalId ?? row.original.id}
+          </span>
+        ),
+      },
       {
         accessorKey: "title",
         header: "Package",
@@ -472,6 +713,18 @@ export default function AdminPackagesPage() {
               </label>
               <label className="grid grid-cols-1! gap-1!">
                 <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Min group
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  value={draftMinGroup}
+                  onChange={(e) => setDraftMinGroup(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
                   Max group
                 </span>
                 <input
@@ -479,6 +732,162 @@ export default function AdminPackagesPage() {
                   min={1}
                   value={draftMaxGroup}
                   onChange={(e) => setDraftMaxGroup(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1! gap-3!">
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Price note
+                </span>
+                <input
+                  value={draftPriceNote}
+                  onChange={(e) => setDraftPriceNote(e.target.value)}
+                  placeholder="e.g. Based on minimum 2 people"
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-emerald-900/10 bg-white p-4">
+            <div className="text-xs font-extrabold text-[var(--muted)]">
+              DETAILS PAGE CONTENT
+            </div>
+            <div className="mt-3 grid grid-cols-1! gap-3!">
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Short description (hero)
+                </span>
+                <textarea
+                  value={draftDescription}
+                  onChange={(e) => setDraftDescription(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+
+              <div className="grid grid-cols-1! gap-3! sm:grid-cols-2">
+                <label className="grid grid-cols-1! gap-1!">
+                  <span className="text-xs font-extrabold text-[var(--muted)]">
+                    Destination
+                  </span>
+                  <input
+                    value={draftDestination}
+                    onChange={(e) => setDraftDestination(e.target.value)}
+                    placeholder="e.g. Rwanda"
+                    className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                  />
+                </label>
+                <label className="grid grid-cols-1! gap-1!">
+                  <span className="text-xs font-extrabold text-[var(--muted)]">
+                    Cover image URL
+                  </span>
+                  <input
+                    value={draftCoverImageUrl}
+                    onChange={(e) => setDraftCoverImageUrl(e.target.value)}
+                    placeholder="/canopy_walk.jpg or https://..."
+                    className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                  />
+                </label>
+              </div>
+
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Gallery images (one URL per line)
+                </span>
+                <textarea
+                  value={draftGalleryUrls}
+                  onChange={(e) => setDraftGalleryUrls(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Itinerary (JSON)
+                </span>
+                <textarea
+                  value={draftItineraryJson}
+                  onChange={(e) => setDraftItineraryJson(e.target.value)}
+                  rows={6}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Inclusions (JSON)
+                </span>
+                <textarea
+                  value={draftInclusionsJson}
+                  onChange={(e) => setDraftInclusionsJson(e.target.value)}
+                  rows={6}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Exclusions (JSON)
+                </span>
+                <textarea
+                  value={draftExclusionsJson}
+                  onChange={(e) => setDraftExclusionsJson(e.target.value)}
+                  rows={6}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Info (JSON)
+                </span>
+                <textarea
+                  value={draftInfoJson}
+                  onChange={(e) => setDraftInfoJson(e.target.value)}
+                  rows={6}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 font-mono text-xs font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-emerald-900/10 bg-white p-4">
+            <div className="text-xs font-extrabold text-[var(--muted)]">
+              SUPPORT CONTACTS
+            </div>
+            <div className="mt-3 grid grid-cols-1! gap-3! sm:grid-cols-2">
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Support phone
+                </span>
+                <input
+                  value={draftSupportPhone}
+                  onChange={(e) => setDraftSupportPhone(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+              <label className="grid grid-cols-1! gap-1!">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  Support email
+                </span>
+                <input
+                  value={draftSupportEmail}
+                  onChange={(e) => setDraftSupportEmail(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
+                />
+              </label>
+              <label className="grid grid-cols-1! gap-1! sm:col-span-2">
+                <span className="text-xs font-extrabold text-[var(--muted)]">
+                  WhatsApp URL
+                </span>
+                <input
+                  value={draftWhatsappUrl}
+                  onChange={(e) => setDraftWhatsappUrl(e.target.value)}
                   className="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-secondary)]"
                 />
               </label>
@@ -599,49 +1008,59 @@ export default function AdminPackagesPage() {
         </div>
 
         <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm sm:p-5">
-          <AdminDataTable
-            data={rows}
-            columns={columns}
-            searchPlaceholder="Search packages by name, location..."
-            pageSize={8}
-            getRowId={(row) => (row as PackageRow).id}
-            renderToolbar={(table) => {
-              const statusCol = table.getColumn("status");
-              const value = (statusCol?.getFilterValue() as string) ?? "all";
+          {loading ? (
+            <div className="rounded-2xl border border-emerald-900/10 bg-[#f6f8f7] p-4 text-sm font-semibold text-[var(--muted)]">
+              Loading packages...
+            </div>
+          ) : loadError ? (
+            <div className="rounded-2xl border border-red-900/10 bg-red-50 p-4 text-sm font-semibold text-red-700">
+              {loadError}
+            </div>
+          ) : (
+            <AdminDataTable
+              data={rows}
+              columns={columns}
+              searchPlaceholder="Search packages by id, name, location..."
+              pageSize={8}
+              getRowId={(row) => (row as PackageRow).id}
+              renderToolbar={(table) => {
+                const statusCol = table.getColumn("status");
+                const value = (statusCol?.getFilterValue() as string) ?? "all";
 
-              return (
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold text-[var(--muted)]">
-                      Status
-                    </span>
-                    <select
-                      value={value}
-                      onChange={(e) =>
-                        statusCol?.setFilterValue(e.target.value)
-                      }
-                      className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
+                return (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-extrabold text-[var(--muted)]">
+                        Status
+                      </span>
+                      <select
+                        value={value}
+                        onChange={(e) =>
+                          statusCol?.setFilterValue(e.target.value)
+                        }
+                        className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)]"
+                      >
+                        <option value="all">All</option>
+                        <option value="active">Active</option>
+                        <option value="draft">Draft</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        statusCol?.setFilterValue("all");
+                        table.setGlobalFilter("");
+                      }}
+                      className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
                     >
-                      <option value="all">All</option>
-                      <option value="active">Active</option>
-                      <option value="draft">Draft</option>
-                    </select>
+                      Reset
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      statusCol?.setFilterValue("all");
-                      table.setGlobalFilter("");
-                    }}
-                    className="rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-xs font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
-                  >
-                    Reset
-                  </button>
-                </div>
-              );
-            }}
-          />
+                );
+              }}
+            />
+          )}
         </div>
 
         {toast ? (

@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
+
+enum PackageStatus {
+  active
+  draft
+}
+
+enum BlogStatus {
+  draft
+  published
+}
+
+enum CustomerSegment {
+  vip
+  new
+  returning
+}
+
+enum AuditEntity {
+  booking
+  package
+  blog
+  customer
+  revenue
+  settings
+  system
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+  status_change
+  publish
+  unpublish
+  message
+  export
+  print
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  name      String?
+  email     String?
+  role      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  audits    AuditLog[]
+}
+
+model Customer {
+  id           String          @id @default(cuid())
+  externalId   String?         @unique
+  name         String
+  email        String?         @unique
+  phone        String?
+  segment      CustomerSegment @default(new)
+  country      String?
+  notes        String?
+  lastBooking  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  bookings     Booking[]
+}
+
+model Package {
+  id           String        @id @default(cuid())
+  externalId   String?       @unique
+  title        String
+  location     String
+  durationDays Int
+  price        Int
+  minGroup     Int           @default(1)
+  maxGroup     Int
+  featured     Boolean       @default(false)
+  status       PackageStatus @default(active)
+
+  description  String?
+  destination  String?
+  coverImageUrl String?
+  galleryImages Json?
+  priceNote    String?
+
+  itinerary    Json?
+  inclusions   Json?
+  exclusions   Json?
+  info         Json?
+
+  supportPhone String?
+  supportEmail String?
+  whatsappUrl  String?
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  bookings     Booking[]
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  externalId  String?       @unique
+  date        DateTime
+  travellers  Int
+  amount      Int
+  status      BookingStatus @default(pending)
+
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id])
+
+  packageId   String
+  package     Package       @relation(fields: [packageId], references: [id])
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([customerId])
+  @@index([packageId])
+  @@index([status])
+  @@index([date])
+}
+
+model BlogPost {
+  id         String     @id @default(cuid())
+  externalId String?    @unique
+  title      String
+  category   String
+  author     String
+  status     BlogStatus @default(draft)
+  readTime   String
+  content    Json
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([status])
+  @@index([category])
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  entity    AuditEntity
+  action    AuditAction
+  actor     String
+  summary   String
+  href      String?
+
+  adminUserId String?
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([entity])
+  @@index([action])
+  @@index([createdAt])
+}

@@ -4,6 +4,7 @@ import "./globals.css";
 import "react-international-phone/style.css";
 import "quill/dist/quill.snow.css";
 import PublicShell from "./components/PublicShell";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,12 +27,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased `}
-      >
-        <PublicShell>{children}</PublicShell>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased `}
+        >
+          <PublicShell>{children}</PublicShell>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

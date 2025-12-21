@@ -3,6 +3,7 @@
 import {
   ColumnDef,
   ColumnFiltersState,
+  RowSelectionState,
   Table,
   flexRender,
   getCoreRowModel,
@@ -20,40 +21,87 @@ export default function AdminDataTable<TData>({
   searchPlaceholder = "Search...",
   pageSize = 8,
   renderToolbar,
+  enableRowSelection = false,
+  getRowId,
 }: {
   data: TData[];
   columns: ColumnDef<TData, any>[];
   searchPlaceholder?: string;
   pageSize?: number;
   renderToolbar?: (table: Table<TData>) => ReactNode;
+  enableRowSelection?: boolean;
+  getRowId?: (originalRow: TData, index: number, parent?: any) => string;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const initialState = useMemo(
     () => ({ pagination: { pageIndex: 0, pageSize } }),
     [pageSize]
   );
 
+  const columnsWithSelection = useMemo(() => {
+    if (!enableRowSelection) return columns;
+
+    const selectCol: ColumnDef<TData, any> = {
+      id: "select",
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          aria-label="Select all rows"
+          checked={table.getIsAllPageRowsSelected()}
+          ref={(el) => {
+            if (!el) return;
+            el.indeterminate = table.getIsSomePageRowsSelected();
+          }}
+          onChange={table.getToggleAllPageRowsSelectedHandler()}
+          className="h-4 w-4 cursor-pointer rounded border-emerald-900/20 text-emerald-700"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          aria-label="Select row"
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onChange={row.getToggleSelectedHandler()}
+          className="h-4 w-4 cursor-pointer rounded border-emerald-900/20 text-emerald-700 disabled:cursor-not-allowed"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      size: 44,
+    };
+
+    return [selectCol, ...columns];
+  }, [columns, enableRowSelection]);
+
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithSelection,
     state: {
       sorting,
       globalFilter,
       columnFilters,
+      rowSelection,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
+    onRowSelectionChange: setRowSelection,
     globalFilterFn: "includesString",
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState,
+    enableRowSelection,
+    getRowId,
   });
+
+  const selectedCount = table.getSelectedRowModel().rows.length;
 
   return (
     <div className="space-y-3">
@@ -88,6 +136,11 @@ export default function AdminDataTable<TData>({
           ) : null}
           <div className="text-xs font-semibold text-[var(--muted)]">
             {table.getFilteredRowModel().rows.length} results
+            {enableRowSelection && selectedCount > 0 ? (
+              <span className="ml-2 text-emerald-700">
+                • {selectedCount} selected
+              </span>
+            ) : null}
           </div>
           <div className="inline-flex items-center gap-2">
             <button

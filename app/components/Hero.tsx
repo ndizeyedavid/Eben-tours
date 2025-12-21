@@ -1,5 +1,72 @@
+"use client";
+
 import "./Hero.module.css";
+import { useEffect, useMemo, useState } from "react";
+
+type HeroMediaType = "image" | "video";
+type HeroMediaRow = { position: number; type: HeroMediaType; url: string };
+
+const fallbackSlides: HeroMediaRow[] = [
+  { position: 1, type: "video", url: "/vids/Web_vidd.mp4" },
+  {
+    position: 2,
+    type: "video",
+    url: "/vids/4911905_Gorilla_Wildlife_1920x1080.mp4",
+  },
+  {
+    position: 3,
+    type: "video",
+    url: "/vids/463059_Elephant_Elephants_1920x1080.mp4",
+  },
+];
+
 export default function Hero() {
+  const [rows, setRows] = useState<HeroMediaRow[]>([]);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/hero-media")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!alive) return;
+        const list = Array.isArray(data?.rows) ? data.rows : [];
+        setRows(list);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setRows([]);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const slides = useMemo(() => {
+    const valid = rows
+      .map((x: any) => ({
+        position: Number(x?.position),
+        type: x?.type === "image" || x?.type === "video" ? x.type : "image",
+        url: String(x?.url ?? "").trim(),
+      }))
+      .filter((x) => [1, 2, 3].includes(x.position) && Boolean(x.url));
+
+    return valid.length ? valid : fallbackSlides;
+  }, [rows]);
+
+  useEffect(() => {
+    setActive(0);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (!slides.length) return;
+    const t = window.setInterval(() => {
+      setActive((prev) => (prev + 1) % slides.length);
+    }, 6000);
+    return () => window.clearInterval(t);
+  }, [slides.length]);
+
   return (
     <section
       className="video-hero"
@@ -16,66 +83,40 @@ export default function Hero() {
           zIndex: 1,
         }}
       >
-        <video
-          className="carousel-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-            filter: "brightness(0.6)",
-          }}
-          src="/vids/Web_vidd.mp4"
-        ></video>
-        <video
-          className="carousel-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "none",
-            filter: "brightness(0.6)",
-          }}
-          src="/vids/4911905_Gorilla_Wildlife_1920x1080.mp4"
-        ></video>
-        <video
-          className="carousel-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "none",
-            filter: "brightness(0.6)",
-          }}
-          src="/vids/463059_Elephant_Elephants_1920x1080.mp4"
-        ></video>
-        <video
-          className="carousel-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "none",
-            filter: "brightness(0.6)",
-          }}
-          src="/vids/giraffe.mp4"
-        ></video>
+        {slides.map((s, idx) =>
+          s.type === "video" ? (
+            <video
+              key={`${s.position}-${s.url}`}
+              className="carousel-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: idx === active ? "block" : "none",
+                filter: "brightness(0.6)",
+              }}
+              src={s.url}
+            />
+          ) : (
+            <img
+              key={`${s.position}-${s.url}`}
+              className="carousel-video"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: idx === active ? "block" : "none",
+                filter: "brightness(0.6)",
+              }}
+              src={s.url}
+              alt="Hero"
+            />
+          )
+        )}
       </div>
       <div
         className="video-hero-content"
@@ -153,10 +194,13 @@ export default function Hero() {
       <div className="overlay"></div>
 
       <div className="carousel-indicators" id="carouselIndicators">
-        <span className="indicator active"></span>
-        <span className="indicator"></span>
-        <span className="indicator"></span>
-        <span className="indicator"></span>
+        {slides.map((_, idx) => (
+          <span
+            key={idx}
+            className={`indicator${idx === active ? " active" : ""}`}
+            onClick={() => setActive(idx)}
+          ></span>
+        ))}
       </div>
     </section>
   );

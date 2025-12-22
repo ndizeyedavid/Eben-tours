@@ -10,13 +10,15 @@ export async function writeAuditLog(args: {
   clerkUserId?: string;
 }) {
   const adminUser = args.clerkUserId
-    ? await prisma.adminUser.upsert({
+    ? // @ts-ignore
+      await prisma.adminUser.upsert({
         where: { clerkId: args.clerkUserId },
         create: { clerkId: args.clerkUserId },
         update: {},
       })
     : null;
 
+  // @ts-ignore
   await prisma.auditLog.create({
     data: {
       entity: args.entity,

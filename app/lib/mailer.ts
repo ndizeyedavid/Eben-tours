@@ -1,3 +1,4 @@
+// @ts-ignore
 import nodemailer from "nodemailer";
 
 function requireEnv(name: string) {

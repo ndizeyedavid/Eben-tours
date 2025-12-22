@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import NProgress from "nprogress";
 
 export default function RouteProgress() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     NProgress.configure({ showSpinner: false, trickleSpeed: 120 });
@@ -49,7 +48,7 @@ export default function RouteProgress() {
 
   useEffect(() => {
     NProgress.done(true);
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   return null;
 }

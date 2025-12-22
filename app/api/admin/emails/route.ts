@@ -15,11 +15,7 @@ export async function GET() {
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const count = await prisma.customer.count({
-    where: {
-      email: { not: null },
-    },
-  });
+  const count = await prisma.customer.count();
 
   return NextResponse.json({ count });
 }
@@ -41,7 +37,6 @@ export async function POST(req: Request) {
 
   const customers = await prisma.customer.findMany({
     select: { email: true, name: true },
-    where: { email: { not: null } },
   });
 
   const targets = customers

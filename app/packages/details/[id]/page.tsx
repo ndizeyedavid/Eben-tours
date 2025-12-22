@@ -17,6 +17,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -174,7 +175,9 @@ export default function PackageDetails() {
             marginBottom: "60px",
           }}
         >
-          <img
+          <Image
+            width={500}
+            height={500}
             src={safePkg.imageUrl || "/canopy_walk.webp"}
             alt={safePkg.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}

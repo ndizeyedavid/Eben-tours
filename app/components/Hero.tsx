@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import "./Hero.module.css";
 import { useEffect, useMemo, useState } from "react";
 
@@ -102,9 +103,11 @@ export default function Hero() {
               src={s.url}
             />
           ) : (
-            <img
+            <Image
               key={`${s.position}-${s.url}`}
               className="carousel-video"
+              width={500}
+              height={500}
               style={{
                 width: "100%",
                 height: "100%",

@@ -8,6 +8,7 @@ import {
   Twitter,
   Youtube,
 } from "lucide-react";
+import Image from "next/image";
 import React from "react";
 
 export default function Footer() {
@@ -123,9 +124,11 @@ export default function Footer() {
                   justifyContent: "center",
                 }}
               >
-                <img
+                <Image
                   src="/log.webp"
                   alt="Eben Tours Logo"
+                  width={48}
+                  height={48}
                   style={{
                     width: "48px",
                     height: "48px",

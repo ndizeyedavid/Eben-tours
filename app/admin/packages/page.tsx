@@ -7,6 +7,7 @@ import AdminDataTable from "@/app/components/admin/table/AdminDataTable";
 import AdminDrawer from "@/app/components/admin/AdminDrawer";
 import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
 import axios from "axios";
+import Image from "next/image";
 
 type PackageStatus = "active" | "draft" | "disabled";
 type PackageCountry = "rwanda" | "kenya" | "tanzania" | "uganda";
@@ -677,9 +678,11 @@ export default function AdminPackagesPage() {
                 />
                 {draftImageUrl ? (
                   <div className="overflow-hidden rounded-xl border border-emerald-900/10 bg-[#f6f8f7]">
-                    <img
+                    <Image
                       src={draftImageUrl}
                       alt="Package"
+                      width={500}
+                      height={500}
                       className="h-40 w-full object-cover"
                     />
                   </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import AdminDrawer from "@/app/components/admin/AdminDrawer";
+import Image from "next/image";
 
 type HeroMediaType = "image" | "video";
 
@@ -271,9 +272,11 @@ export default function AdminHeroMediaPage() {
                     </div>
                   ) : (
                     <div className="overflow-hidden rounded-xl border border-emerald-900/10 bg-[#f6f8f7]">
-                      <img
+                      <Image
                         src={editing.url}
                         alt="Hero"
+                        width={500}
+                        height={500}
                         className="h-52 w-full object-cover"
                       />
                     </div>
@@ -355,9 +358,11 @@ export default function AdminHeroMediaPage() {
                       className="h-40 w-full rounded-xl border border-emerald-900/10 object-cover"
                     />
                   ) : (
-                    <img
+                    <Image
                       src={r.url}
                       alt={`Slide ${r.position}`}
+                      width={500}
+                      height={500}
                       className="h-40 w-full rounded-xl border border-emerald-900/10 object-cover"
                     />
                   )

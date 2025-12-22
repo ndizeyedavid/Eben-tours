@@ -1,4 +1,5 @@
 import { ArrowRight, InfoIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 interface IDestinationCard {
@@ -42,9 +43,11 @@ export default function DestinationCard({
           transition: "all 0.6s ease",
         }}
       >
-        <img
+        <Image
           src={bg}
           alt={title}
+          width={500}
+          height={500}
           style={{
             width: "100%",
             height: "100%",
@@ -93,9 +96,11 @@ export default function DestinationCard({
             fontFamily: "var(--font-serif)",
           }}
         >
-          <img
+          <Image
             src={flag}
             alt={title + " Flag"}
+            width={28}
+            height={28}
             style={{
               width: "28px",
               height: "auto",

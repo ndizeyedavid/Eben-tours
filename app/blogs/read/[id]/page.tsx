@@ -2,6 +2,7 @@ import SectionHeader from "@/app/components/SectionHeader";
 import BlogReaderEnhancements from "@/app/components/BlogReaderEnhancements";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import Image from "next/image";
 
 export default async function BlogReadPage({
   params,
@@ -59,9 +60,11 @@ export default async function BlogReadPage({
           }}
         >
           <div style={{ position: "relative" }}>
-            <img
+            <Image
               src={post.imageUrl || "/gorila.webp"}
               alt={post.title}
+              width={500}
+              height={500}
               style={{ width: "100%", height: "420px", objectFit: "cover" }}
             />
           </div>

@@ -10,6 +10,7 @@ import { useAdminOps } from "@/app/components/admin/AdminOpsProvider";
 import AdminQuillEditor, {
   QuillDelta,
 } from "@/app/components/admin/AdminQuillEditor";
+import Image from "next/image";
 
 type PostStatus = "draft" | "published";
 
@@ -532,9 +533,11 @@ export default function AdminBlogsPage() {
                 />
                 {draftImageUrl ? (
                   <div className="overflow-hidden rounded-xl border border-emerald-900/10 bg-[#f6f8f7]">
-                    <img
+                    <Image
                       src={draftImageUrl}
                       alt="Blog"
+                      width={500}
+                      height={500}
                       className="h-40 w-full object-cover"
                     />
                   </div>

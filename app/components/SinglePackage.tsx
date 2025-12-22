@@ -1,5 +1,6 @@
 import { Earth, Tag } from "lucide-react";
 import styles from "./SinglePckage.module.css";
+import Image from "next/image";
 
 export default function SinglePackage({
   id,
@@ -22,7 +23,12 @@ export default function SinglePackage({
         <div className={`${styles.ribbon} z-99999`}>Most Popular</div>
       ) : null}
       <div className={styles["img-box"]}>
-        <img src={imageUrl || "/cro.webp"} alt={title} />
+        <Image
+          width={100}
+          height={100}
+          src={imageUrl || "/cro.webp"}
+          alt={title}
+        />
       </div>
       <div className={`${styles["package-content"]}`}>
         <div className="flex items-center! gap-2">

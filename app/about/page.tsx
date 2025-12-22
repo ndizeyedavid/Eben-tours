@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "About",
@@ -148,9 +149,11 @@ export default function AboutPage() {
                 border: "2px solid rgba(30, 86, 49, 0.08)",
               }}
             >
-              <img
+              <Image
                 src="/lion.webp"
                 alt="Safari Adventure"
+                width={500}
+                height={500}
                 style={{
                   width: "100%",
                   height: "100%",

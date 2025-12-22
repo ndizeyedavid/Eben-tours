@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./Header.module.css";
+import Image from "next/image";
 export default function Header() {
   const pathname = usePathname();
 
@@ -16,7 +17,7 @@ export default function Header() {
     <header className={styles.header}>
       <div className={`${styles.container} ${styles.nav}`}>
         <div className={styles.brand}>
-          <img src="/log.webp" alt="ventures logo" />
+          <Image width={60} height={60} src="/log.webp" alt="ventures logo" />
           <div>
             <h1>Eben Tours safaris</h1>
             <div style={{ fontSize: "12px", color: "var(--muted)" }}>

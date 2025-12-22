@@ -58,7 +58,7 @@ export function buildBrandedEmail(args: {
     ""
   ).trim();
   const brandName = "Eben Tours";
-  const logoSrc = siteUrl ? `${siteUrl.replace(/\/$/, "")}/Logo-011.webp` : "";
+  const logoSrc = siteUrl ? `${siteUrl.replace(/\/$/, "")}/log.webp` : "";
 
   const safeTitle = escapeHtml(args.title);
   const footer =

@@ -1,11 +1,18 @@
 import Link from "next/link";
 import type { BlogPost } from "../blogs/blogsData";
 import { Clock, Shield } from "lucide-react";
+import Image from "next/image";
 
 export default function SingleBlog({ post }: { post: BlogPost }) {
   return (
     <article className="card">
-      <img src={post.image || "/gorila.webp"} alt={post.title} loading="lazy" />
+      <Image
+        width={100}
+        height={100}
+        src={post.image || "/gorila.webp"}
+        alt={post.title}
+        loading="lazy"
+      />
       <div>
         <h3>{post.title}</h3>
         <p

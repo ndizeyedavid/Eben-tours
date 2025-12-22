@@ -1,5 +1,7 @@
 "use client";
 
+import { Earth, Flag } from "lucide-react";
+
 type CountryKey = "all" | "rwanda" | "kenya" | "tanzania" | "uganda";
 
 export default function Filter({
@@ -37,9 +39,11 @@ export default function Filter({
             transition: "all 0.3s ease",
             fontSize: "14px",
             letterSpacing: "0.5px",
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          <i className="fas fa-earth-africa" style={{ marginRight: "8px" }}></i>
+          <Earth size={18} style={{ marginRight: "8px" }} />
           All Destinations
         </button>
         <button
@@ -57,9 +61,11 @@ export default function Filter({
             transition: "all 0.3s ease",
             fontSize: "14px",
             letterSpacing: "0.5px",
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          <i className="fas fa-flag" style={{ marginRight: "8px" }}></i>Rwanda
+          <Flag size={18} style={{ marginRight: "8px" }} /> Rwanda
         </button>
         <button
           type="button"
@@ -76,9 +82,11 @@ export default function Filter({
             transition: "all 0.3s ease",
             fontSize: "14px",
             letterSpacing: "0.5px",
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          <i className="fas fa-flag" style={{ marginRight: "8px" }}></i>Kenya
+          <Flag size={18} style={{ marginRight: "8px" }} /> Kenya
         </button>
         <button
           type="button"
@@ -95,9 +103,11 @@ export default function Filter({
             transition: "all 0.3s ease",
             fontSize: "14px",
             letterSpacing: "0.5px",
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          <i className="fas fa-flag" style={{ marginRight: "8px" }}></i>
+          <Flag size={18} style={{ marginRight: "8px" }} />
           Tanzania
         </button>
         <button
@@ -115,9 +125,11 @@ export default function Filter({
             transition: "all 0.3s ease",
             fontSize: "14px",
             letterSpacing: "0.5px",
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          <i className="fas fa-flag" style={{ marginRight: "8px" }}></i>Uganda
+          <Flag size={18} style={{ marginRight: "8px" }} /> Uganda
         </button>
       </div>
     </div>

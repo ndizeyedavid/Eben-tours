@@ -96,7 +96,7 @@ export default function Header() {
 
         <div className={styles.cta}>
           <Link className={styles["cta-primary"]} href="/book">
-            Book a Trek
+            Request a Trek
           </Link>
         </div>
       </div>

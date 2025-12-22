@@ -902,6 +902,36 @@ button:focus {
   outline-offset: 3px;
 }
 
+/* NProgress */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress .bar {
+  background: var(--color-primary);
+  position: fixed;
+  z-index: 99999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+}
+
+#nprogress .peg {
+  display: block;
+  position: absolute;
+  right: 0;
+  width: 100px;
+  height: 100%;
+  box-shadow: 0 0 10px var(--color-primary), 0 0 5px var(--color-primary);
+  opacity: 1;
+  transform: rotate(3deg) translate(0px, -4px);
+}
+
+#nprogress .spinner {
+  display: none;
+}
+
 /* Main container (reduced padding) */
 .tour-packages {
   padding: 80px 8%;

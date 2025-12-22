@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navItems: Array<{
   label: string;
@@ -181,6 +184,14 @@ function Icon({ name }: { name: (typeof navItems)[number]["icon"] }) {
 }
 
 export default function AdminSidebar() {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (!pathname) return false;
+    if (href === "/admin") return pathname === "/admin";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-[260px] shrink-0 overflow-y-auto border-r border-emerald-900/10 bg-white px-4 py-6 lg:block">
       <div className="mb-6">
@@ -193,28 +204,31 @@ export default function AdminSidebar() {
       </div>
 
       <nav className="space-y-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={
-              item.href === "/admin"
-                ? "flex items-center gap-3 rounded-xl bg-[var(--color-primary)] px-3 py-2 text-sm font-extrabold text-white"
-                : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
-            }
-          >
-            <span
-              className={
-                item.href === "/admin"
-                  ? "text-white"
-                  : "text-[var(--color-primary)]"
-              }
-            >
-              <Icon name={item.icon} />
-            </span>
-            {item.label}
-          </Link>
-        ))}
+        {navItems.map((item) =>
+          (() => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={
+                  active
+                    ? "flex items-center gap-3 rounded-xl bg-[var(--color-primary)] px-3 py-2 text-sm font-extrabold text-white!"
+                    : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-extrabold text-[var(--color-secondary)] hover:bg-emerald-50"
+                }
+              >
+                <span
+                  className={
+                    active ? "text-white!" : "text-[var(--color-primary)]"
+                  }
+                >
+                  <Icon name={item.icon} />
+                </span>
+                {item.label}
+              </Link>
+            );
+          })()
+        )}
       </nav>
 
       {/* <div className="mt-8">

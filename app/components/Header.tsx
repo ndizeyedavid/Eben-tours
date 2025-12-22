@@ -1,6 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import styles from "./Header.module.css";
 export default function Header() {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (!pathname) return false;
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   return (
     <header className={styles.header}>
       <div className={`${styles.container} ${styles.nav}`}>
@@ -24,27 +35,60 @@ export default function Header() {
           </button>
           <ul id="primary-menu">
             <li>
-              <Link className={styles.active} href="/">
+              <Link
+                className={isActive("/") ? styles.active : undefined}
+                href="/"
+              >
                 Home
               </Link>
             </li>
             <li>
-              <Link href="/destination">Destinations</Link>
+              <Link
+                className={isActive("/destination") ? styles.active : undefined}
+                href="/destination"
+              >
+                Destinations
+              </Link>
             </li>
             <li>
-              <Link href="/packages">Packages</Link>
+              <Link
+                className={isActive("/packages") ? styles.active : undefined}
+                href="/packages"
+              >
+                Packages
+              </Link>
             </li>
             <li>
-              <Link href="/services">Services</Link>
+              <Link
+                className={isActive("/services") ? styles.active : undefined}
+                href="/services"
+              >
+                Services
+              </Link>
             </li>
             <li>
-              <Link href="/about">About</Link>
+              <Link
+                className={isActive("/about") ? styles.active : undefined}
+                href="/about"
+              >
+                About
+              </Link>
             </li>
             <li>
-              <Link href="/blogs">Blog</Link>
+              <Link
+                className={isActive("/blogs") ? styles.active : undefined}
+                href="/blogs"
+              >
+                Blog
+              </Link>
             </li>
             <li>
-              <Link href="/contact">Contact</Link>
+              <Link
+                className={isActive("/contact") ? styles.active : undefined}
+                href="/contact"
+              >
+                Contact
+              </Link>
             </li>
           </ul>
         </nav>

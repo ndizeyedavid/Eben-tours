@@ -11,6 +11,16 @@ import {
   Trophy,
 } from "lucide-react";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About",
+  description:
+    "Learn about Eben Tours Safaris—our story, values, and commitment to crafting unforgettable African safari experiences with expert guides and sustainable tourism.",
+  alternates: {
+    canonical: "/about",
+  },
+};
 
 export default function AboutPage() {
   return (

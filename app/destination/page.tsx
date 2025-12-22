@@ -1,6 +1,16 @@
 import { Plane } from "lucide-react";
 import DestinationCard from "../components/DestinationCard";
 import SectionHeader from "../components/SectionHeader";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Destinations",
+  description:
+    "Explore iconic safari destinations with Eben Tours Safaris across Rwanda, Kenya, Tanzania, and Uganda. Discover wildlife, landscapes, and the best seasons to travel.",
+  alternates: {
+    canonical: "/destination",
+  },
+};
 
 export default function DestinationPage() {
   return (

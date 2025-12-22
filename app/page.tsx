@@ -11,6 +11,36 @@ import ContactForm from "./components/ContactForm";
 import Footer from "./components/Footer";
 import { prisma } from "@/app/lib/prisma";
 import type { BlogPost } from "./blogs/blogsData";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Eben Tours Safaris",
+  description:
+    "Bespoke African safari experiences with Eben Tours Safaris. Explore Rwanda, Kenya, Tanzania & Uganda with curated packages, expert guides, and seamless booking.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "Eben Tours Safaris",
+    description:
+      "Bespoke African safari experiences with curated tours, expert guides, and easy online booking.",
+    images: [
+      {
+        url: "/Logo-011.webp",
+        alt: "Eben Tours Safaris",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Eben Tours Safaris",
+    description:
+      "Bespoke African safari experiences with curated tours, expert guides, and easy online booking.",
+    images: ["/Logo-011.webp"],
+  },
+};
 
 function deltaToParagraphs(delta: unknown): string[] {
   const ops = (delta as any)?.ops;

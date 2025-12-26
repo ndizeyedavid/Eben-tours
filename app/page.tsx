@@ -12,6 +12,8 @@ import Footer from "./components/Footer";
 import { prisma } from "@/app/lib/prisma";
 import type { BlogPost } from "./blogs/blogsData";
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import HomeLoading from "./components/HomeLoading";
 
 export const metadata: Metadata = {
   title: "Eben Tours Safaris",
@@ -64,6 +66,14 @@ function excerptFromParagraphs(paragraphs: string[]): string {
 }
 
 export default async function Home() {
+  return (
+    <Suspense fallback={<HomeLoading />}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+async function HomeContent() {
   const packages = await prisma.package.findMany({
     where: { status: "active" },
     orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
@@ -91,7 +101,6 @@ export default async function Home() {
 
   return (
     <>
-      {/* <Header /> */}
       <Hero />
       <main className="container" id="home">
         <h2
@@ -263,7 +272,7 @@ export default async function Home() {
               transition: "all 0.3s ease",
             }}
           >
-            View all Articles →
+            View all Posts →
           </Link>
         </div>
 
@@ -275,6 +284,7 @@ export default async function Home() {
       </main>
 
       <ContactForm />
+      {/* <HomeLoading /> */}
     </>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -194,12 +195,15 @@ export default function AdminSidebar() {
 
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-[260px] shrink-0 overflow-y-auto border-r border-emerald-900/10 bg-white px-4 py-6 lg:block">
-      <div className="mb-6">
-        <div className="text-lg font-extrabold tracking-tight text-[var(--color-secondary)]">
-          Eben Tours
-        </div>
-        <div className="text-xs font-semibold text-[var(--muted)]">
-          ADMIN DASHBOARD
+      <div className="mb-6 flex items-center gap-3 cursor-pointer">
+        <Image src="/log.webp" width={60} height={60} alt="Eben Tours Logo" />
+        <div>
+          <div className="text-lg font-extrabold tracking-tight text-[var(--color-secondary)]">
+            Eben Tours
+          </div>
+          <div className="text-xs font-semibold text-[var(--muted)]">
+            ADMIN DASHBOARD
+          </div>
         </div>
       </div>
 

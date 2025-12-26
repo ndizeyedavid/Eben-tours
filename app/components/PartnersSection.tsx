@@ -17,7 +17,7 @@ export default function PartnersSection() {
           <Image
             width={100}
             height={100}
-            src="/visit-rwanda-seeklogo.webp"
+            src="/Visit_Rwanda_Logo.png"
             alt="Visit Rwanda Partner"
             loading="lazy"
           />

@@ -9,10 +9,35 @@ import {
   Youtube,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 export default function Footer() {
   const year = new Date().getFullYear();
+
+  const links = [
+    {
+      text: "Packages",
+      href: "/packages",
+    },
+    {
+      text: "Destination",
+      href: "/destination",
+    },
+    {
+      text: "Blog",
+      href: "/Blogs",
+    },
+    {
+      text: "Services",
+      href: "/services",
+    },
+    {
+      text: "About Us",
+      href: "/about",
+    },
+  ];
+
   return (
     <footer
       style={{
@@ -247,30 +272,14 @@ export default function Footer() {
                 fontSize: "14px",
               }}
             >
-              <li style={{ marginBottom: "12px" }}>
-                <a className="footer-link text-white" href="#packages">
-                  <ChevronRight style={{ fontSize: "12px", opacity: 0.6 }} />
-                  Packages
-                </a>
-              </li>
-              <li style={{ marginBottom: "12px" }}>
-                <a className="footer-link text-white" href="#destinations">
-                  <ChevronRight style={{ fontSize: "12px", opacity: 0.6 }} />
-                  Destinations
-                </a>
-              </li>
-              <li style={{ marginBottom: "12px" }}>
-                <a className="footer-link text-white" href="#blog">
-                  <ChevronRight style={{ fontSize: "12px", opacity: 0.6 }} />
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a className="footer-link text-white" href="#about">
-                  <ChevronRight style={{ fontSize: "12px", opacity: 0.6 }} />
-                  About Us
-                </a>
-              </li>
+              {links.map((link, index) => (
+                <li key={index} style={{ marginBottom: "12px" }}>
+                  <Link className="footer-link text-white" href={link.href}>
+                    <ChevronRight style={{ fontSize: "12px", opacity: 0.6 }} />
+                    {link.text}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

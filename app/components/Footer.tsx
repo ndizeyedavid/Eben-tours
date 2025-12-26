@@ -273,7 +273,7 @@ export default function Footer() {
               }}
             >
               {links.map((link, index) => (
-                <li style={{ marginBottom: "12px" }}>
+                <li key={index} style={{ marginBottom: "12px" }}>
                   <Link className="footer-link text-white" href={link.href}>
                     <ChevronRight style={{ fontSize: "12px", opacity: 0.6 }} />
                     {link.text}

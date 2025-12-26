@@ -75,7 +75,7 @@ export default async function Home() {
 
 async function HomeContentWithDelay() {
   // Add a delay to ensure loading is visible for longer
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 4000));
 
   return <HomeContent />;
 }

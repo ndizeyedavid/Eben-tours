@@ -166,13 +166,6 @@ export default function AdminDashboardPage() {
                       Weekly bookings volume
                     </div>
                   </div>
-                  <div className="inline-flex rounded-xl border border-emerald-900/10 bg-[#f6f8f7] p-1 text-xs font-extrabold text-[var(--color-secondary)]">
-                    <span className="rounded-lg bg-[var(--color-primary)] px-3 py-1 text-white">
-                      Week
-                    </span>
-                    <span className="px-3 py-1 opacity-60">Month</span>
-                    <span className="px-3 py-1 opacity-60">Year</span>
-                  </div>
                 </div>
 
                 <BookingTrendsChart data={data?.bookingTrends} />
